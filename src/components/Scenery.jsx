@@ -19,7 +19,7 @@ void main() { vUv = uv; gl_Position = vec4(position.xy, 0.0, 1.0); }
 
 const frag = /* glsl */ `
 precision highp float;
-uniform sampler2D tS, tF, tM, tN, gS, gF, gM, gN;
+uniform sampler2D tS, tF, tM, tN, gS, gF, gM, gN, rF, rN;
 uniform vec2 uRes, uMouse, uVel;
 uniform float uTime, uPan, uZoom, uDim, uFade, uSpeed, uMotion;
 uniform vec2 uShot;
@@ -40,38 +40,43 @@ float fbm(vec2 p) {
 
 vec2 toUv(vec2 q) { return vec2(q.x * 0.5 + 0.5, q.y + 0.5); }
 
-void sampleLayer(sampler2D t, sampler2D g, vec2 p, float depth, out vec4 body, out float glow) {
+void sampleLayer(sampler2D t, sampler2D g, vec2 p, float depth, float blur, out vec4 body, out float glow, out vec2 uvo) {
   vec2 q = p / uZoom;
   q.x += (uPan + uShot.x) * depth;
   q.y += uShot.y * depth * 0.6;
   q -= uMouse * depth * 0.035;
   vec2 uv = toUv(q);
+  uvo = uv;
   if (uv.y < 0.0 || uv.y > 1.0) { body = vec4(0.0); glow = 0.0; return; }
   uv.x = fract(uv.x);
+  uvo = uv;
   body = texture2D(t, uv);
+  if (blur > 0.0) {
+    // atmospheric softness for distant layers
+    body = body * 0.4 + (texture2D(t, uv + vec2(blur, 0.0)) + texture2D(t, uv - vec2(blur, 0.0))
+         + texture2D(t, uv + vec2(0.0, blur * 1.6)) + texture2D(t, uv - vec2(0.0, blur * 1.6))) * 0.15;
+  }
   float o = 0.0028;
   glow = texture2D(g, uv).a * 0.6
     + (texture2D(g, uv + vec2(o, 0.0)).a + texture2D(g, uv - vec2(o, 0.0)).a
      + texture2D(g, uv + vec2(0.0, o * 2.0)).a + texture2D(g, uv - vec2(0.0, o * 2.0)).a) * 0.18;
 }
 
-// Rising threads of light anchored to the ground.
-float threads(vec2 p, float depth) {
-  float x0 = p.x / uZoom + (uPan + uShot.x) * depth - uMouse.x * depth * 0.035;
-  float acc = 0.0;
-  for (int i = 0; i < 3; i++) {
-    float fi = float(i);
-    float cx = (fi - 1.0) * 1.33 + 0.18;
-    float cell = floor((x0 - cx + 2.0) / 4.0);
-    float lx = mod(x0 - cx + 2.0, 4.0) - 2.0;
-    float y = p.y;
-    float wob = sin(y * 5.0 + uTime * 0.6 + fi * 2.0 + cell) * 0.05 * (0.6 + y)
-              + sin(y * 13.0 - uTime * 1.1 + fi) * 0.012;
-    float dist = abs(lx - wob);
-    float fade = smoothstep(-0.55, -0.2, y) * smoothstep(0.55, 0.05, y);
-    acc += (smoothstep(0.012, 0.0, dist) * 0.9 + smoothstep(0.08, 0.0, dist) * 0.25) * fade;
-  }
-  return acc;
+// Living light inside a Tacet Field. m is the stepped depth mask (0 at the rim, 1 deep inside).
+vec3 riftColor(vec2 uv, float m) {
+  float t = uTime;
+  vec2 w = vec2(fbm(uv * vec2(160.0, 22.0) + vec2(0.0, -t * 0.35)), fbm(uv * vec2(160.0, 22.0) + vec2(5.2, 1.3 - t * 0.28)));
+  float grain = sin(uv.x * 2600.0 + w.x * 9.0 + sin(uv.y * 120.0 + t) * 1.5) * 0.5 + 0.5;
+  float flow = fbm(vec2(uv.x * 420.0 + w.y * 3.0, uv.y * 60.0 - t * 0.9));
+  float rings = smoothstep(0.34, 0.5, abs(fract(m * 4.5 - t * 0.25) - 0.5));
+  vec3 deep = vec3(0.42, 0.17, 0.02);
+  vec3 hot = vec3(1.0, 0.96, 0.82);
+  vec3 c = mix(deep, uAura, smoothstep(0.0, 0.45, m));
+  c = mix(c, hot, smoothstep(0.5, 1.0, m) * 0.85);
+  c *= 0.72 + 0.5 * flow;
+  c += hot * 0.22 * smoothstep(0.55, 1.0, grain) * (0.4 + m);
+  c *= 1.0 - rings * 0.3;
+  return c * (1.15 + 0.15 * sin(t * 1.7));
 }
 
 // Embers and ash drifting up.
@@ -102,18 +107,22 @@ void main() {
   float band = exp(-pow((sr - R) / 0.06, 2.0)) * exp(-age * 1.4) * step(0.0, age);
   warp -= normalize(sd + 1e-5) * band * 0.08 * uShock.w;
 
-  vec4 s, fa, m, n; float gs, gf, gm, gn;
-  sampleLayer(tS, gS, p + warp * 0.35, 0.04, s, gs);
-  sampleLayer(tF, gF, p + warp * 0.6, 0.22, fa, gf);
-  sampleLayer(tM, gM, p + warp * 0.85, 0.5, m, gm);
-  sampleLayer(tN, gN, p + warp * 1.1, 1.0, n, gn);
+  vec4 s, fa, m, n; float gs, gf, gm, gn; vec2 uS, uF, uM, uN;
+  sampleLayer(tS, gS, p + warp * 0.35, 0.04, 0.0, s, gs, uS);
+  sampleLayer(tF, gF, p + warp * 0.6, 0.22, 0.0016, fa, gf, uF);
+  sampleLayer(tM, gM, p + warp * 0.85, 0.5, 0.0, m, gm, uM);
+  sampleLayer(tN, gN, p + warp * 1.1, 1.0, 0.0, n, gn, uN);
+  float rf = (uF.y >= 0.0 && uF.y <= 1.0) ? texture2D(rF, uF).a : 0.0;
+  float rn = (uN.y >= 0.0 && uN.y <= 1.0) ? texture2D(rN, uN).a : 0.0;
+  if (rf > 0.002) fa.rgb = mix(fa.rgb, riftColor(uF, rf), smoothstep(0.0, 0.07, rf));
+  if (rn > 0.002) n.rgb = mix(n.rgb, riftColor(uN * vec2(1.0, 1.0) + 0.37, rn), smoothstep(0.0, 0.05, rn));
 
   // Dark atmosphere: the colour field behind shows through as a tint.
   float sky = smoothstep(-0.5, 0.6, p.y);
   vec3 col = uFog * 0.05;
   float a = mix(0.62, 0.42, sky);
   col = s.rgb * s.a + col * (1.0 - s.a); a = s.a + a * (1.0 - s.a);
-  vec3 farC = mix(fa.rgb, uFog * 0.7, 0.3);
+  vec3 farC = mix(fa.rgb, uFog * 0.7, 0.3 * (1.0 - smoothstep(0.0, 0.1, rf) * 0.7));
   col = farC * fa.a + col * (1.0 - fa.a); a = fa.a + a * (1.0 - fa.a);
   // haze band between far and mid
   float haze = smoothstep(-0.05, -0.3, p.y) * 0.25;
@@ -142,7 +151,6 @@ void main() {
   float glow = gs * 0.5 + gf * 0.45 + gm * 0.95 + gn * 1.15;
   glow *= pulse;
   glow += band * 0.35 * uShock.w;
-  glow += threads(p + warp * 0.9, 0.75) * 0.55 * (0.8 + 0.2 * sin(uTime * 2.0));
   // warm light pooling at the ground line
   glow += smoothstep(-0.25, -0.5, p.y) * 0.12 * pulse;
   vec3 aura = uAura * glow * 1.35 + vec3(1.0, 0.95, 0.85) * pow(min(glow, 1.0), 3.0) * 0.22;
@@ -166,6 +174,9 @@ void main() {
   a = a + vig * 0.55 * (1.0 - a);
   col *= 1.0 - vig * 0.35;
 
+  // fine film grain so flat areas never look plastic
+  float fg = hash(gl_FragCoord.xy + fract(uTime * 7.0) * 113.0) - 0.5;
+  col += fg * 0.035 * a;
   gl_FragColor = vec4(col * uDim * uFade, a * uFade * mix(0.85, 1.0, uDim));
 }
 `
@@ -196,6 +207,7 @@ function Plane({ shot, s, layers }) {
     tF: { value: tex(layers.far[0]) }, gF: { value: tex(layers.far[1]) },
     tM: { value: tex(layers.mid[0]) }, gM: { value: tex(layers.mid[1]) },
     tN: { value: tex(layers.near[0]) }, gN: { value: tex(layers.near[1]) },
+    rF: { value: tex(layers.far[2]) }, rN: { value: tex(layers.near[2]) },
     uRes: { value: new THREE.Vector2(1, 1) },
     uMouse: { value: new THREE.Vector2() },
     uVel: { value: new THREE.Vector2() },
@@ -238,7 +250,7 @@ function Plane({ shot, s, layers }) {
     k.x = lerp(k.x, sh.x, dt * 1.4); k.y = lerp(k.y, sh.y, dt * 1.4)
     k.zoom = lerp(k.zoom, sh.zoom, dt * 1.4)
     k.dim = lerp(k.dim, sh.dim * (s.mode === 'light' ? 0.35 : 1), dt * 2)
-    k.fade = lerp(k.fade, 1, dt * 1.2)
+    k.fade = lerp(k.fade, 1, dt * 2)
     const dpr = gl.getPixelRatio()
     u.uRes.value.set(size.width * dpr, size.height * dpr)
     u.uMouse.value.copy(k.mouse)
