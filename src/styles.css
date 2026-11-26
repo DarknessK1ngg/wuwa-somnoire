@@ -378,7 +378,7 @@ main { position: relative; z-index: 2; min-height: 100svh; }
 
 /* Ladder */
 .ladder { display: grid; gap: 8px; }
-.rung { display: grid; grid-template-columns: 110px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(12px); }
+.rung { display: grid; grid-template-columns: 150px minmax(0, 1fr) auto; gap: 16px; align-items: center; padding: 14px 18px; border-radius: 14px; background: var(--panel); border: 1px solid var(--line); backdrop-filter: blur(12px); }
 .rung b { font-family: var(--serif); font-size: 24px; font-weight: 700; white-space: nowrap; }
 .rung span { font-size: 15px; color: var(--ink-2); }
 .rung em { font-style: normal; font-size: 13px; font-weight: 700; padding: 4px 10px; border-radius: 999px; background: var(--accent); color: #0b0716; white-space: nowrap; }
@@ -521,3 +521,21 @@ main { position: relative; z-index: 2; min-height: 100svh; }
 .menu-link.on { border-color: color-mix(in srgb, var(--aura) 55%, transparent); }
 .menu-link.on > .mk-edge { opacity: .9; transform: scaleY(.8); }
 .vcard { padding-bottom: 28px; }
+
+/* ---------- Mode switch (VSB / ACF) ---------- */
+.modes { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.mode-btn { position: relative; isolation: isolate; overflow: hidden; display: grid; gap: 2px; text-align: left; padding: 16px 18px 20px 46px;
+  border-radius: 4px 18px 4px 18px; border: 1px solid rgba(255, 255, 255, .1); background: linear-gradient(160deg, rgba(16, 12, 30, .74), rgba(5, 4, 12, .66));
+  transition: border-color .3s, box-shadow .3s; }
+.mode-btn b { font-family: var(--serif); font-size: 24px; font-weight: 600; line-height: 1.1; }
+.mode-btn small { font-size: 13px; color: var(--ink-2); }
+.mode-check { position: absolute; left: 16px; top: 20px; width: 16px; height: 16px; border-radius: 4px; border: 1.5px solid color-mix(in srgb, var(--accent) 70%, transparent); transition: background .25s, border-color .25s, box-shadow .25s; }
+.mode-btn.on { border-color: color-mix(in srgb, var(--aura) 60%, transparent); box-shadow: 0 0 0 1px color-mix(in srgb, var(--aura) 20%, transparent), 0 18px 40px -22px color-mix(in srgb, var(--aura) 60%, transparent); }
+.mode-btn.on .mode-check { background: var(--aura); border-color: var(--aura); box-shadow: 0 0 12px var(--aura); }
+.mode-btn.on .mode-check::after { content: ''; position: absolute; left: 4.5px; top: 1px; width: 4px; height: 8px; border: solid #120c02; border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.mode-btn.on > .mk-edge { opacity: .9; transform: scaleY(.8); }
+:root[data-mode='light'] .mode-btn { background: rgba(255, 255, 255, .75); border-color: rgba(30, 20, 60, .12); }
+.reboot { position: fixed; inset: 0; z-index: 60; background: #020107; display: grid; place-items: center; pointer-events: none; animation: rebootfade 1.35s ease forwards; }
+@keyframes rebootfade { 0% { opacity: 0; } 28%, 55% { opacity: 1; } 100% { opacity: 0; } }
+.reboot-line { width: min(70vw, 760px); height: 2px; background: linear-gradient(90deg, transparent, #fff, var(--aura), #fff, transparent); box-shadow: 0 0 24px var(--aura); animation: rebootline 1.2s cubic-bezier(.6, 0, .2, 1) forwards; }
+@keyframes rebootline { 0% { transform: scaleX(0); } 45% { transform: scaleX(1); } 100% { transform: scaleX(1) scaleY(.2); opacity: 0; } }

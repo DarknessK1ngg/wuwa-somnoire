@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { markPath } from '../mark'
 import { shockAt } from '../bus'
+import { usePack } from '../lang'
 
 const ease = [0.2, 0.75, 0.1, 1]
 const BURST = 1.05 // seconds until the Mark bursts open
@@ -75,6 +76,7 @@ export function Shockwave({ x, y, size = 1, delay = 0 }) {
 }
 
 export default function Intro({ onExplore }) {
+  const { UI } = usePack()
   const path = useMemo(() => markPath(600), [])
   const disp = useRef(), turb = useRef(), markRef = useRef()
   const [leaving, setLeaving] = useState(false)
@@ -141,13 +143,13 @@ export default function Intro({ onExplore }) {
         animate={{ opacity: 1, letterSpacing: '0.26em' }}
         transition={{ delay: BURST + 1.5, duration: 1.3, ease }}
       >
-        <span>VS Battles</span> <span className="dot" /> <span>the Somnoire dossier</span>
+        <span>{UI.intro.sub[0]}</span> <span className="dot" /> <span>{UI.intro.sub[1]}</span>
       </motion.p>
 
       <motion.div className="intro-tiers" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: BURST + 1.85, duration: 0.9, ease }}>
-        <span>High 1-B</span>
+        <span>{UI.intro.tiers[0]}</span>
         <i />
-        <span>Low 1-A</span>
+        <span>{UI.intro.tiers[1]}</span>
       </motion.div>
 
       <motion.button
@@ -166,11 +168,11 @@ export default function Intro({ onExplore }) {
         }}
       >
         <span className="explore-ring" />
-        <span className="explore-label">Explore</span>
+        <span className="explore-label">{UI.intro.explore}</span>
       </motion.button>
 
       <motion.p className="intro-foot" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: BURST + 2.8, duration: 1 }}>
-        Every line quoted from the game files, in the original Chinese
+        {UI.intro.foot}
       </motion.p>
 
       {burstAt && <Shockwave x={burstAt.x} y={burstAt.y} size={0.8} />}

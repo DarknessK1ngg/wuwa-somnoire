@@ -1,7 +1,7 @@
 import MarkEdge, { MarkBadge, MarkRule } from './MarkEdge'
 import { lazy, Suspense, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
-import { SECTIONS, TERMS, GALLERY } from '../content'
+import { usePack } from '../lang'
 
 const Corridor = lazy(() => import('./Corridor'))
 const ease = [0.2, 0.75, 0.1, 1]
@@ -13,16 +13,17 @@ const reveal = {
 }
 
 function Key({ k }) {
+  const { UI } = usePack()
   const [done, setDone] = useState(false)
   return (
     <button
       className="key"
-      title="Copy key"
+      title={UI.sec.copy}
       onClick={() => {
         navigator.clipboard?.writeText(k.split(' ·')[0]).then(() => { setDone(true); setTimeout(() => setDone(false), 1200) }, () => {})
       }}
     >
-      {done ? 'copied' : k}
+      {done ? UI.sec.copied : k}
     </button>
   )
 }
@@ -45,11 +46,12 @@ function Quote({ b }) {
 }
 
 function Figs({ items, open }) {
+  const { UI } = usePack()
   return (
     <div className={`figs figs-${Math.min(items.length, 2)}`}>
       {items.map((f, i) => (
         <motion.figure key={f.src} className="fig" {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}>
-          <button onClick={() => open(f)} aria-label="Open full size">
+          <button onClick={() => open(f)} aria-label={UI.sec.open}>
             <motion.img layoutId={f.src} src={f.src} alt={f.cap} loading="lazy" />
           </button>
           <figcaption>{f.cap}</figcaption>
@@ -59,47 +61,32 @@ function Figs({ items, open }) {
   )
 }
 
-const TIERS = [
-  ['1-A', 'Exceeds Low 1-A as far as Low 1-A exceeds High 1-B', 'no'],
-  ['Low 1-A', 'Above a High 1-B hierarchy as a whole', 'case'],
-  ['High 1-B', 'Countably infinite qualitative steps above a universe', 'yes'],
-  ['1-B', '8 to any finite number of levels of infinity (R^12+)', ''],
-  ['1-C', '3 to 7 levels of infinity (R^7 to R^11)', ''],
-  ['Low 1-C', '1 to 2 levels of infinity (R^5 to R^6)', ''],
-  ['Universe', 'The baseline: one standard universe', ''],
-]
-
 function Ladder() {
+  const { UI } = usePack()
   return (
     <div className="ladder">
-      {TIERS.map(([t, d, mark], i) => (
+      {UI.tiers.map(([t, d, mark], i) => (
         <motion.div key={t} className={`rung rung-${mark || 'plain'}`} {...reveal} transition={{ ...reveal.transition, delay: i * 0.06 }}>
           <b>{t}</b>
           <span>{d}</span>
-          {mark === 'yes' && <em>dream hierarchy</em>}
-          {mark === 'case' && <em>waking reality</em>}
-          {mark === 'no' && <em className="muted">not claimed</em>}
+          {mark === 'yes' && <em>{UI.tierTags.yes}</em>}
+          {mark === 'case' && <em>{UI.tierTags.case}</em>}
+          {mark === 'no' && <em className="muted">{UI.tierTags.no}</em>}
         </motion.div>
       ))}
     </div>
   )
 }
 
-const NEST = [
-  ['Waking reality', 'Solaris. Real people, real bodies.'],
-  ['Door → the Somnoire', 'The medium that stores every dream. 載體.'],
-  ['A dream', 'A Sonoro, with its own space and time.'],
-  ['A dreamer inside it', 'Their dream becomes a new Sonoro.'],
-  ['…and again', 'Every layer has dreamers of its own.'],
-]
-
 function Nest() {
+  const { UI } = usePack()
+  const NEST = UI.nest
   const render = (i) => {
     if (i >= NEST.length) {
       return (
         <motion.div className="nest-core" initial={{ scale: 0.6, opacity: 0 }} whileInView={{ scale: 1, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.9, type: 'spring' }}>
           <span className="cn">無窮無盡</span>
-          <small>without end</small>
+          <small>{UI.nestCore}</small>
         </motion.div>
       )
     }
@@ -120,11 +107,7 @@ function Nest() {
 }
 
 function Verdict() {
-  const cards = [
-    ['High 1-B', 'The dream hierarchy', 'Countably infinite layers. Each one a full universe and recorded fiction for the layer above.', 'yes'],
-    ['Low 1-A', 'Waking reality', 'Above the whole hierarchy at once. Every layer is stored dream data to it.', 'case'],
-    ['1-A', 'Not claimed', 'Would need a line showing reality itself as fiction to something higher.', 'no'],
-  ]
+  const cards = usePack().UI.verdict
   return (
     <div className="verdict">
       {cards.map(([t, k, d, m], i) => (
@@ -140,12 +123,7 @@ function Verdict() {
 }
 
 function Steps({ go }) {
-  const steps = [
-    ['sonoro', 'A Sonoro is a universe', 'Its own space, its own time, and it unfolds without limit.'],
-    ['fiction', 'Dreams are fiction', 'The Somnoire records, backs up and replays them. Their people "do not truly exist".'],
-    ['recursion', 'The layers never end', 'Dreamers inside dreams make new Sonoro. 層層夢境無窮無盡.'],
-    ['low1a', 'Reality sits above it all', 'One medium holds every layer. To the waking world it is all record.'],
-  ]
+  const steps = usePack().UI.steps
   return (
     <ol className="steps">
       {steps.map(([id, t, d], i) => (
@@ -163,12 +141,13 @@ function Steps({ go }) {
 }
 
 function Terms() {
+  const { TERMS } = usePack()
   return (
     <div className="terms">
       {TERMS.map(([en, cn, d], i) => (
         <motion.div key={en} className="term" {...reveal} transition={{ ...reveal.transition, delay: (i % 4) * 0.05 }}>
           <MarkEdge seed={i + 21} spikes={2} />
-          <div className="term-head"><b>{en}</b><span className={cn === 'VSB' ? 'tag' : 'cn'}>{cn}</span></div>
+          <div className="term-head"><b>{en}</b><span className={cn === 'VSB' || cn === 'АЦФ' ? 'tag' : 'cn'}>{cn}</span></div>
           <p>{d}</p>
         </motion.div>
       ))}
@@ -177,33 +156,23 @@ function Terms() {
 }
 
 function Sources() {
+  const { UI } = usePack()
   const base = 'https://raw.githubusercontent.com/Arikatsu/WutheringWaves_Data/a96f6c6e87717d528a340de37374d9fc5a5ba563/Textmaps'
+  const href = (u) => (u === 'zh' ? `${base}/zh-Hant/multi_text/MultiText.json` : u === 'en' ? `${base}/en/multi_text/MultiText.json` : u)
   return (
     <motion.div className="sources" {...reveal}>
-      <ol className="how">
-        <li>Copy a key from under any quote. Click it and it copies.</li>
-        <li>Open the Chinese or English text file below. It is about 50 MB, give it a moment.</li>
-        <li>Press Ctrl+F and paste the key. The line under it is the in-game text.</li>
-      </ol>
+      <ol className="how">{UI.sources.how.map((t) => <li key={t}>{t}</li>)}</ol>
       <div className="src-links">
-        <a href={`${base}/zh-Hant/multi_text/MultiText.json`} target="_blank" rel="noreferrer">Chinese (Traditional) text · 3.8</a>
-        <a href={`${base}/en/multi_text/MultiText.json`} target="_blank" rel="noreferrer">English text · 3.8</a>
-        <a href="https://github.com/Arikatsu/WutheringWaves_Data" target="_blank" rel="noreferrer">WutheringWaves_Data on GitHub</a>
-        <a href="https://vsbattles.fandom.com/wiki/Tiering_System" target="_blank" rel="noreferrer">VSB · Tiering System</a>
-        <a href="https://vsbattles.fandom.com/wiki/Reality-Fiction_Transcendence" target="_blank" rel="noreferrer">VSB · Reality-Fiction Transcendence</a>
+        {UI.sources.links.map(([l, u]) => <a key={l} href={href(u)} target="_blank" rel="noreferrer">{l}</a>)}
       </div>
-      <p className="small">Version numbers mark the first game version whose files contain the key. Screenshots are in-game captures.</p>
+      <p className="small">{UI.sources.note}</p>
     </motion.div>
   )
 }
 
-
 function Remnant() {
-  const steps = [
-    { cls: 'orbit-freq', n: 4, t: 'Record', cn: '記錄', p: 'Remnant energy records events across space and time.' },
-    { cls: 'orbit-rem', n: 4, t: 'Remnant energy', cn: '回音能量', p: 'Pure, complete frequency energy whose information stays stable beyond space and time.' },
-    { cls: 'orbit-son', n: 0, t: 'Sonoro', cn: '索諾拉', p: 'Where it gathers densely, a supernatural region forms. Scholars call it Sonoro.' },
-  ]
+  const cls = ['orbit-freq', 'orbit-rem', 'orbit-son'], ns = [4, 4, 0]
+  const steps = usePack().UI.remnant.map(([t, cn, p], i) => ({ cls: cls[i], n: ns[i], t, cn, p }))
   return (
     <motion.div className="flowr" {...reveal}>
       {steps.map((s) => (
@@ -219,6 +188,7 @@ function Remnant() {
 }
 
 export default function Section({ id, go, settings }) {
+  const { SECTIONS, GALLERY, UI } = usePack()
   const idx = SECTIONS.findIndex((x) => x.id === id)
   const sec = SECTIONS[idx]
   const prev = SECTIONS[idx - 1]
@@ -260,7 +230,7 @@ export default function Section({ id, go, settings }) {
         return (
           <motion.div key={i} {...reveal}>
             <Suspense fallback={<div className="corridor" />}>
-              <Corridor color={settings.s.accent} moving={settings.s.motion} />
+              <Corridor color={settings.s.accent} moving={settings.s.motion} caption={UI.corridor} />
             </Suspense>
           </motion.div>
         )
@@ -278,7 +248,7 @@ export default function Section({ id, go, settings }) {
       transition={{ duration: 0.7, ease }}
     >
       <header className="sec-head">
-        <button className="crumb" onClick={() => go('map')}>← Map</button>
+        <button className="crumb" onClick={() => go('map')}>{UI.sec.map}</button>
         <span className="sec-group">{sec.group}</span>
         <motion.span className="sec-num" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>{sec.num}</motion.span>
         <h2 className="sec-title">
@@ -295,8 +265,8 @@ export default function Section({ id, go, settings }) {
       <div className="sec-body">{sec.blocks.map(renderBlock)}</div>
 
       <nav className="pager">
-        {prev ? <button onClick={() => go(prev.id)}><MarkEdge seed={51} /><small>Previous</small>{prev.title}</button> : <span />}
-        {next ? <button className="next" onClick={() => go(next.id)}><MarkEdge seed={52} /><small>Next</small>{next.title}</button> : <button className="next" onClick={() => go('map')}><MarkEdge seed={53} /><small>Done</small>Back to the map</button>}
+        {prev ? <button onClick={() => go(prev.id)}><MarkEdge seed={51} /><small>{UI.sec.prev}</small>{prev.title}</button> : <span />}
+        {next ? <button className="next" onClick={() => go(next.id)}><MarkEdge seed={52} /><small>{UI.sec.next}</small>{next.title}</button> : <button className="next" onClick={() => go('map')}><MarkEdge seed={53} /><small>{UI.sec.done}</small>{UI.sec.back}</button>}
       </nav>
 
       <AnimatePresence>

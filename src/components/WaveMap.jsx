@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
-import { SECTIONS, WAVE } from '../content'
+import { WAVE } from '../content'
+import { usePack } from '../lang'
 import { profile } from '../mark'
 import { bus } from '../bus'
 
 const SP = 520 // world distance between section spikes
-const byId = Object.fromEntries(SECTIONS.map((s) => [s.id, s]))
 const ORDER = Object.entries(WAVE).sort((a, b) => a[1] - b[1]).map(([id]) => id)
 const MIN = Math.min(...Object.values(WAVE)) * SP
 const MAX = Math.max(...Object.values(WAVE)) * SP
@@ -26,6 +26,8 @@ function makeNodes() {
 }
 
 export default function WaveMap({ go }) {
+  const { SECTIONS, UI } = usePack()
+  const byId = useMemo(() => Object.fromEntries(SECTIONS.map((x) => [x.id, x])), [SECTIONS])
   const wrap = useRef(), cv = useRef(), layer = useRef(), tilt = useRef(), view = useRef(), edgeL = useRef(), edgeR = useRef()
   const els = useRef({})
   const nodes = useMemo(makeNodes, [])
@@ -217,8 +219,8 @@ export default function WaveMap({ go }) {
                   <span className="wn-ray" />
                   <span className="wn-tag">
                     <span className="wn-num">{sec.num}</span>
-                    <b>{WAVE[n.id] === 0 ? 'The Core' : sec.title}</b>
-                    <small>{WAVE[n.id] === 0 ? 'Verdict: where it all lands' : sec.short}</small>
+                    <b>{WAVE[n.id] === 0 ? UI.map.core : sec.title}</b>
+                    <small>{WAVE[n.id] === 0 ? UI.map.coreShort : sec.short}</small>
                   </span>
                 </button>
               )
@@ -230,11 +232,11 @@ export default function WaveMap({ go }) {
       </div>
 
       <footer className="wave-foot">
-        <p className="eyebrow wave-eyebrow">Follow the Mark · every spike opens a door</p>
+        <p className="eyebrow wave-eyebrow">{UI.map.eyebrow}</p>
         <p className="wave-hint">
-          {touch ? 'Drag to travel along the Mark · tap a spike to enter' : 'Move toward an edge to travel · hover a spike · click to enter'}
+          {touch ? UI.map.hintTouch : UI.map.hintMouse}
         </p>
-        <div className="mini" aria-label="Sections along the Mark">
+        <div className="mini" aria-label={UI.map.mini}>
           <span className="mini-line" />
           <span className="mini-view" ref={view} />
           {ORDER.map((id) => (
@@ -244,7 +246,7 @@ export default function WaveMap({ go }) {
               style={{ left: `${((WAVE[id] * SP - (MIN - 600)) / span) * 100}%` }}
               onClick={() => { s.target = WAVE[id] * SP }}
               title={byId[id].title}
-              aria-label={`Travel to ${byId[id].title}`}
+              aria-label={`${UI.map.travel} ${byId[id].title}`}
             />
           ))}
         </div>

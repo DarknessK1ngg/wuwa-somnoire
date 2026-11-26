@@ -45,7 +45,7 @@ function Doors({ color, moving }) {
   )
 }
 
-export default function Corridor({ color = '#7ff2e6', moving = true }) {
+export default function Corridor({ color = '#7ff2e6', moving = true, caption = '' }) {
   return (
     <div className="corridor">
       <Canvas camera={{ position: [0, 0, 4.5], fov: 60 }} dpr={[1, 1.75]} gl={{ antialias: true, alpha: true }}>
@@ -55,7 +55,7 @@ export default function Corridor({ color = '#7ff2e6', moving = true }) {
       </Canvas>
       <div className="corridor-cap">
         <span className="cn">層層夢境無窮無盡</span>
-        <span>Layer upon layer, without end</span>
+        <span>{caption}</span>
       </div>
     </div>
   )

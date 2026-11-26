@@ -9,7 +9,7 @@ export const PRESETS = {
   ivory: { name: 'Ivory', c1: '#c9b6ff', c2: '#a6f0ea', c3: '#fff6ec', accent: '#5b2bd6', aura: '#d79a2b', mode: 'light' },
 }
 
-const DEFAULTS = { preset: 'somnoire', ...PRESETS.somnoire, motion: true, grain: true, text: 1 }
+const DEFAULTS = { preset: 'somnoire', ...PRESETS.somnoire, motion: true, grain: true, text: 1, site: 'vsb' }
 const KEY = 'somnoire-site-settings'
 
 function load() {
@@ -37,6 +37,6 @@ export function useSettings() {
   }, [s])
   const update = (patch) => setS((p) => ({ ...p, ...patch }))
   const applyPreset = (id) => setS((p) => ({ ...p, preset: id, ...PRESETS[id] }))
-  const reset = () => setS({ ...DEFAULTS })
+  const reset = () => setS((p) => ({ ...DEFAULTS, site: p.site }))
   return { s, update, applyPreset, reset }
 }
