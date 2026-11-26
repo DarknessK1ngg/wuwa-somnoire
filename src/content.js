@@ -1,0 +1,422 @@
+// All Chinese lines are copied from the game's Traditional Chinese text (data 3.8).
+// Keys are string IDs in Textmaps/zh-Hant/multi_text/MultiText.json. Versions = first game version containing the key.
+
+const S = (n) => `scans/${n}.jpg`
+
+export const SECTIONS = [
+  {
+    id: 'verdict',
+    num: '00',
+    title: 'Verdict',
+    short: 'Where the Somnoire lands on the VSB scale',
+    group: 'Overview',
+    lead:
+      'Every dream on Solaris is kept in one place, the Somnoire. Each of those dreams is a Sonoro with its own space and time, and the people inside dream too. Their dreams turn into new Sonoro, and it keeps going down. That is an endless ladder of worlds, and VSB has a name for it.',
+    blocks: [
+      { type: 'verdict' },
+      { type: 'h', text: 'The argument in four steps' },
+      { type: 'steps' },
+    ],
+  },
+  {
+    id: 'rules',
+    num: '01',
+    title: 'VSB Rules',
+    short: 'Tier 1 and Reality-Fiction Transcendence',
+    group: 'Overview',
+    lead:
+      'VSB measures Tier 1 in levels of infinity stacked over a standard universe. Size alone does not get you there. What counts is a qualitative gap, where the lower world is nothing next to the higher one.',
+    blocks: [
+      { type: 'ladder' },
+      {
+        type: 'rule',
+        title: 'Reality-Fiction Transcendence',
+        text:
+          'A world that treats the one below it as literal fiction stands one level of infinity above it. VSB lists dreams and data among the accepted mediums. The word "dream" on its own is not enough: the story has to show the lower world as fiction in substance.',
+        link: ['Read the VSB page', 'https://vsbattles.fandom.com/wiki/Reality-Fiction_Transcendence'],
+      },
+      {
+        type: 'rule',
+        title: 'Low 1-A is not "the top of High 1-B"',
+        text:
+          'Standing on the highest step of an infinite hierarchy is still High 1-B. Low 1-A needs something that is above the whole hierarchy at once.',
+        link: ['Tiering System', 'https://vsbattles.fandom.com/wiki/Tiering_System'],
+      },
+    ],
+  },
+  {
+    id: 'structure',
+    num: '02',
+    title: 'Structure',
+    short: 'Doors, the Somnoire and what sits inside',
+    group: 'The cosmology',
+    lead:
+      'Doors open across Solaris. Step through one and you are inside the Somnoire, the medium that stores every dream. The game says it plainly: the space inside the Door is the Somnoire.',
+    blocks: [
+      { type: 'nest' },
+      {
+        type: 'quote',
+        cn: '這扇門中的空間叫做心之集域，它貯存了索拉里斯上的所有幻想。',
+        en: '"The space inside this door is called the Somnoire. It stores every fantasy on Solaris."',
+        who: 'Gatekeeper, at the Door',
+        key: 'Guide_YXQJCZ_1_10',
+        ver: '1.4',
+      },
+      {
+        type: 'quote',
+        cn: '心之集域是用於存儲夢的載體',
+        en: '"The Somnoire is a medium for storing dreams." 載體 is the word for a carrier or storage medium.',
+        who: 'Quest summary',
+        key: 'Event_AYKXBRZM_61_31',
+        ver: '1.4',
+      },
+      {
+        type: 'figs',
+        items: [
+          { src: S('into-the-dream'), cap: '"Into the dream." Every Door is an entrance to the Somnoire.' },
+          { src: S('door-cosmos'), cap: 'Inside a dream: a Door opening onto open space and a planet.' },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'sonoro',
+    num: '03',
+    title: 'Sonoro = Universe',
+    short: 'Own space, own time, endless expansion',
+    group: 'The cosmology',
+    lead:
+      'The base unit for VSB is a universe. A Sonoro qualifies: it is a region with its own space, its own flow of time and its own rules, and it can be unfolded without limit.',
+    blocks: [
+      {
+        type: 'quote',
+        cn: '「回音」富集形成的超自然空間區域，學界稱之為「索諾拉」',
+        en: '"A supernatural spatial region formed where Remnant energy gathers. Scholars call it a Sonoro."',
+        who: 'Glossary',
+        key: 'Term850077',
+        ver: '2.4',
+      },
+      {
+        type: 'quote',
+        cn: '毋庸置疑的，塔內的時間流速與外界並不相同……不，整個穗波市的時間都與外界不同。',
+        en: '"No doubt about it, time in the tower flows differently from outside... no, all of Honami runs on a different time from the outside world."',
+        who: 'Sumika\'s notes, after 160+ days inside the Honami Sonoro',
+        key: 'InfoDisplay_120101054',
+        ver: '2.8',
+      },
+      {
+        type: 'quote',
+        cn: '好在這個索諾拉停滯了時間',
+        en: '"Luckily, this Sonoro has stopped time." A few pages later: 既然在此處時間是可塑的黏土, "since time here is malleable clay".',
+        who: 'Sumika\'s notes',
+        key: 'InfoDisplay_120101051 · 120101052',
+        ver: '2.8',
+      },
+      {
+        type: 'quote',
+        cn: '孕育出了時空錯亂的索諾拉「幽靈之海」。在指定範圍內，使用坎特蕾拉給予的提燈即可在不同時空之間穿梭',
+        en: '"...gave birth to the Sonoro \'Sea of Phantoms\', its space-time in disarray. Inside it, Cantarella\'s lantern lets you travel between different space-times."',
+        who: 'Quest hint',
+        key: 'GuideTutorialPage_34138',
+        ver: '2.2',
+      },
+      {
+        type: 'quote',
+        cn: '黑海岸可以利用泰緹斯無限展開索諾拉的特性',
+        en: '"The Black Shores can use Tethys and the way a Sonoro unfolds infinitely." The official English reads "a Sonoro\'s infinite expansion", and the quest summary repeats it.',
+        who: 'Aalto, main story',
+        key: 'Main_Rinascita_2_12_91_8 · 91_19',
+        ver: '2.7',
+      },
+      {
+        type: 'quote',
+        cn: '畢竟所謂的電影院，不過只是心之集域所收容的一個索諾拉罷了',
+        en: '"After all, the so-called cinema is just a Sonoro held inside the Somnoire." The Somnoire holds Sonoro.',
+        who: 'Somnoire film festival',
+        key: 'RogueRes_EventPlot_Des_510022_3',
+        ver: '2.5',
+      },
+    ],
+  },
+  {
+    id: 'fiction',
+    num: '04',
+    title: 'Dreams = Fiction',
+    short: 'Recorded, backed up, replayed',
+    group: 'The cosmology',
+    lead:
+      'R>F needs the lower world to be fiction in substance. The Somnoire treats dreams exactly like stored data: it records them, backs them up and replays them. The people you meet inside are not really there.',
+    blocks: [
+      {
+        type: 'quote',
+        cn: '換句話說，它記錄了每個人的夢。',
+        en: '"In other words, it records everyone\'s dreams."',
+        who: 'Gatekeeper, at the Door',
+        key: 'Guide_YXQJCZ_1_13',
+        ver: '1.4',
+      },
+      {
+        type: 'quote',
+        cn: '只有被心之集域記錄下來的夢境能夠在這裡復現，而外界帶入的東西則無法使用',
+        en: '"Only dreams the Somnoire has recorded can be reproduced here. Things brought in from outside can\'t be used."',
+        who: 'Ebony Gatekeeper',
+        key: 'Guide_YXQJCZ_7_15',
+        ver: '1.4',
+      },
+      {
+        type: 'quote',
+        cn: '我一直想讓集域履行它原本的使命，繼續完成夢境備份的任務',
+        en: '"I always wanted the Somnoire to carry out its original purpose and keep backing up dreams."',
+        who: 'Somnoire administrator',
+        key: 'Guide_XMZMLGNP_2_10',
+        ver: '2.0',
+      },
+      {
+        type: 'quote',
+        cn: '你理解成一個正在做夢的人就行了，但是，她並不真實存在，只是門制造出的虛影。',
+        en: '"Just think of her as someone dreaming. But she doesn\'t truly exist. She\'s only an Illusia made by the Gate." 虛影 means an empty, insubstantial shadow.',
+        who: 'Ebony Gatekeeper',
+        key: 'Guide_YXQJCZ_7_11',
+        ver: '1.4',
+      },
+      {
+        type: 'figs',
+        items: [
+          { src: S('illusia-cn'), cap: 'The same line in the Chinese client.' },
+          { src: S('illusia-en'), cap: 'And in English.' },
+        ],
+      },
+      {
+        type: 'quote',
+        cn: '在心之集域中，武器的外觀形制不過是表象，其概念的核心是用於戰鬥的工具。',
+        en: '"In the Somnoire, a weapon\'s form is only an appearance. The core of its concept is a tool for battle."',
+        who: 'Somnoire event weapon skins',
+        key: 'WeaponSkinConf_80080001',
+        ver: '1.4',
+      },
+    ],
+  },
+  {
+    id: 'recursion',
+    num: '05',
+    title: 'Recursion',
+    short: 'Layer under layer, without end',
+    group: 'The hierarchy',
+    lead:
+      'A dream needs a dreamer. The people living inside a Sonoro dream as well, and their dreams form another Sonoro. Doors inside dreams lead further down, and the game calls the layers endless outright.',
+    blocks: [
+      { type: 'corridor' },
+      {
+        type: 'quote',
+        cn: '因為一定要有一個正在做夢的人，才能有一場夢',
+        en: '"Because for a dream to exist, there has to be someone dreaming it."',
+        who: 'Ebony Gatekeeper',
+        key: 'Guide_YXQJCZ_7_13',
+        ver: '1.4',
+      },
+      {
+        type: 'quote',
+        cn: '不管是我們，還是往人，大家都會做夢。',
+        en: '"Whether it\'s us or the Left Behind, everyone dreams." The Left Behind already live inside the Honami Sonoro.',
+        who: 'Namipon',
+        key: 'Event_WRHMJSTM_10_6',
+        ver: '3.3',
+      },
+      {
+        type: 'quote',
+        cn: '由往人的夢境構成，類似心之集域，卻又與它不同的索諾拉',
+        en: '"A Sonoro woven from the dreams of the Left Behind, similar to the Somnoire, yet not the same." A dream inside a Sonoro becomes a new Sonoro.',
+        who: 'Namipon',
+        key: 'Event_WRHMJSTM_10_7',
+        ver: '3.3',
+      },
+      {
+        type: 'quote',
+        cn: '你以為離開了夢境，卻發現自己進入了另一個夢境中',
+        en: '"You thought you had left the dream, only to find yourself in another one."',
+        who: 'Event summary',
+        key: 'Event_AYKXBRZM_58_6',
+        ver: '1.4',
+      },
+      {
+        type: 'quote',
+        cn: '前面的門還在延續，夢境會越來越深',
+        en: '"The doors ahead keep going. The dream will only get deeper."',
+        who: 'Depths of Illusive Realm',
+        key: 'RG_WuWangZhe_10_1',
+        ver: '1.3',
+      },
+      {
+        type: 'quote',
+        big: true,
+        cn: '層層夢境無窮無盡',
+        en: '"Layer upon layer, the dreams run without end." 無窮 is the ordinary Chinese word for mathematical infinity, as in 無窮大.',
+        who: 'Abyss of the Final Dreams',
+        key: 'InstanceDungeon_8914',
+        ver: '3.6',
+      },
+      {
+        type: 'quote',
+        cn: '這裡，有無窮無盡的夢湧了進來……',
+        en: '"Here, endless dreams come pouring in..." The English client softens 無窮無盡 to "countless".',
+        who: 'An Illusia inside the Somnoire',
+        key: 'Event_AYKXBRZM_11_5',
+        ver: '1.4',
+      },
+      {
+        type: 'figs',
+        items: [
+          { src: S('door-in-door'), cap: 'Inside a dream: a Door behind a Door behind a Door.' },
+          { src: S('doors-water'), cap: 'More Doors standing inside another dream world.' },
+          { src: S('namipon-layers'), cap: 'Namipon: "Let\'s start with the surface layers of the dreams, and after that we can go deeper."' },
+          { src: S('deeper-layers'), cap: '"Use the powers you gain to challenge ever deeper layers of the dream."' },
+        ],
+      },
+      {
+        type: 'rule',
+        title: 'The count',
+        text:
+          'Each layer is a universe that exists as recorded fiction for the layer above, so each one adds at least a level of infinity. The layers are countably infinite. By the VSB definition that is High 1-B. The infinity comes from what is inside, not from claiming the Somnoire itself is infinite.',
+      },
+    ],
+  },
+  {
+    id: 'low1a',
+    num: '06',
+    title: 'The Case for Low 1-A',
+    short: 'Reality above the whole stack',
+    group: 'The hierarchy',
+    lead:
+      'Low 1-A needs something above the hierarchy as a whole, not just on its top step. Every layer, however deep, sits in one medium. For the waking world all of it is the same thing: recorded dreams, populated by Illusia that do not truly exist.',
+    blocks: [
+      {
+        type: 'figs',
+        items: [{ src: S('countless-dreams-en'), cap: 'An Illusia inside the Somnoire: "Here, countless dreams rush in..."' }],
+      },
+      {
+        type: 'rule',
+        title: 'Why this is not just one more step',
+        text:
+          'People in the waking world are not on the ladder at all. Only an Illusia of them goes in. The relationship between reality and the Somnoire is the same for layer one and layer one thousand: stored record versus the thing that stores it.',
+      },
+      {
+        type: 'quote',
+        cn: '吞噬存在的鳴式阿列夫一所具有的特性是「虛無」，是萬物的消解。',
+        en: '"The defining trait of Aleph-1, the Reverberation that devours existence, is nothingness: the dissolution of all things." Framed as a Lahai-Roi theory that Aemeath later confirms.',
+        who: 'Main story',
+        key: 'MAIN_YHX_55_20',
+        ver: '3.1',
+      },
+      {
+        type: 'rule',
+        tone: 'muted',
+        title: 'What about 1-A?',
+        text:
+          'Aleph-1 is the obvious candidate, but no line yet shows waking reality as fiction to it. Until one turns up, 1-A is not claimed here.',
+      },
+    ],
+  },
+  {
+    id: 'terms',
+    num: '07',
+    title: 'Terms',
+    short: 'Every name you will meet here',
+    group: 'Reference',
+    lead: 'Short definitions for the in-game names and the VSB terms used on this site.',
+    blocks: [{ type: 'terms' }],
+  },
+  {
+    id: 'evidence',
+    num: '08',
+    title: 'Evidence',
+    short: 'All scans in one place',
+    group: 'Reference',
+    lead: 'Every screenshot used on this site. Tap one to open it full size.',
+    blocks: [{ type: 'gallery' }],
+  },
+  {
+    id: 'objections',
+    num: '09',
+    title: 'Objections',
+    short: 'The usual pushback, answered',
+    group: 'Reference',
+    lead: 'Three things people bring up, and why they do not change the result.',
+    blocks: [
+      {
+        type: 'objection',
+        q: 'The Somnoire has limited space.',
+        cn: '心之集域中的空間是有限的',
+        key: 'Event_AYKXBRZM_61_22',
+        a: 'True, one line says its capacity is finite. Nothing here rests on the size of the container. A book in your hand is finite too. The tier comes from what is stored inside: Sonoro that unfold without limit, in layers that never end.',
+      },
+      {
+        type: 'objection',
+        q: '"但你已行至盡頭" means the layers end.',
+        cn: '層層夢境無窮無盡，但你已行至盡頭',
+        key: 'InstanceDungeon_8914',
+        a: 'The layers are the ones without end. "You have reached the end" is about the player\'s run through the stage. The official English says "you have reached the journey\'s end".',
+      },
+      {
+        type: 'objection',
+        q: 'Dreams break into reality, so it is not real R>F.',
+        cn: '儘管它擁有著能侵蝕現實的能力，但終究還是歸屬於夢境的造物',
+        key: 'Main_LahaiRoi_BYHM_246_19',
+        a: 'The game treats those cases as anomalies to be shut down, and what breaks through stays a creation of the dream that fades with its dreamer. Doors are meant to appear only in remote places in the first place (Main_LahaiRoi_BYHM_2_1).',
+      },
+    ],
+  },
+  {
+    id: 'sources',
+    num: '10',
+    title: 'Sources',
+    short: 'Check every line yourself',
+    group: 'Reference',
+    lead: 'Every quote on this site has a string key. Search it in the game files and you get the Chinese original and the official English side by side.',
+    blocks: [{ type: 'sources' }],
+  },
+]
+
+export const TERMS = [
+  ['Somnoire', '心之集域', 'The space that stores every dream on Solaris. The game calls it a medium, 載體.'],
+  ['Sonoro', '索諾拉 · 蜃境', 'A region formed where Remnant energy gathers, with its own space, time and rules.'],
+  ['Door', '門', 'The way into the Somnoire. "The space inside this door is the Somnoire."'],
+  ['Illusia', '虛影', 'The shape a dreamer takes inside the Somnoire. "She doesn\'t truly exist."'],
+  ['Gatekeepers', '守門人', 'Ebony and Ivory, the two administrators of the Somnoire and its Doors.'],
+  ['The Left Behind', '往人', 'People living inside the Honami Sonoro. They dream too.'],
+  ['Remnant', '回音', 'The pure form of frequencies. Where it piles up, a Sonoro forms.'],
+  ['Frequency', '頻率', 'What everything on Solaris is made of, from matter to memory.'],
+  ['Tethys', '泰緹斯', 'The Black Shores system that can unfold a Sonoro infinitely.'],
+  ['Reverberation', '鳴式', 'Calamity-class beings. Aleph-1 is one of them.'],
+  ['Aleph-1', '阿列夫一', 'The Reverberation whose nature is nothingness, 虛無.'],
+  ['High 1-B', 'VSB', 'Countably infinite qualitative steps above a universe.'],
+  ['Low 1-A', 'VSB', 'Above a High 1-B hierarchy as a whole.'],
+  ['R>F', 'VSB', 'Reality-Fiction Transcendence: the lower world is fiction to the higher one.'],
+]
+
+export const GALLERY = [
+  ['into-the-dream', '"Into the dream."'],
+  ['door-cosmos', 'A Door inside a dream opening onto space.'],
+  ['door-in-door', 'Door behind Door behind Door.'],
+  ['doors-water', 'Doors inside another dream world.'],
+  ['namipon-layers', 'Namipon: surface layers first, then deeper.'],
+  ['deeper-layers', '"Ever deeper layers of the dream."'],
+  ['illusia-cn', 'Ebony Gatekeeper (CN): 她並不真實存在'],
+  ['illusia-en', 'Ebony Gatekeeper (EN): "she doesn\'t truly exist"'],
+  ['countless-dreams-en', '"Here, countless dreams rush in..."'],
+  ['endless-dreams-cn', 'CN: 這裡，有無窮無盡的夢湧了進來'],
+].map(([n, cap]) => ({ src: S(n), cap }))
+
+// Tree map layout (viewBox 1000 x 800)
+export const TREE = {
+  verdict: { x: 500, y: 70 },
+  rules: { x: 140, y: 330, parent: 'verdict' },
+  structure: { x: 380, y: 330, parent: 'verdict' },
+  recursion: { x: 620, y: 330, parent: 'verdict' },
+  terms: { x: 860, y: 330, parent: 'verdict' },
+  sources: { x: 90, y: 620, parent: 'rules' },
+  sonoro: { x: 265, y: 620, parent: 'structure' },
+  fiction: { x: 440, y: 620, parent: 'structure' },
+  low1a: { x: 615, y: 620, parent: 'recursion' },
+  objections: { x: 790, y: 620, parent: 'recursion' },
+  evidence: { x: 945, y: 620, parent: 'terms' },
+}
