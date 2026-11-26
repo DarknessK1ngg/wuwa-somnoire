@@ -75,3 +75,25 @@ export function markPath(half = 600, centre = { up: 190, down: 130, w: 54 }) {
   }
   return `M${top.join('L')}L${bot.reverse().join('L')}Z`
 }
+
+// A thin Mark line for card edges and dividers. viewBox 0 0 1000 40, baseline at y=20.
+export function edgePath(seed = 1, spikes = 3, amp = 16) {
+  const r = (i) => { const x = Math.sin((seed * 13.7 + i) * 91.3) * 43758.5453; return x - Math.floor(x) }
+  const nodes = []
+  for (let i = 0; i < spikes; i++) {
+    nodes.push({ x: 1000 * (0.1 + 0.8 * ((i + 0.2 + r(i) * 0.6) / spikes)) + seed * 2000, up: amp * (0.5 + r(i + 9) * 0.6), down: amp * (0.3 + r(i + 4) * 0.5), w: 16 + r(i + 2) * 18 })
+  }
+  nodes[0].up = amp * 1.15; nodes[0].down = amp * 0.85
+  const env = (x) => { const u = (x - seed * 2000) / 1000; return Math.min(1, u * 6, (1 - u) * 6) }
+  const top = [], bot = []
+  for (let x = 0; x <= 1000; x += 4) {
+    const wx = x + seed * 2000
+    const [u, d] = profile(wx, nodes, 0, env, 0.22)
+    top.push(`${x},${(20 - Math.min(19, u * 0.9)).toFixed(1)}`)
+    bot.push(`${x},${(20 + Math.min(19, d * 0.9)).toFixed(1)}`)
+  }
+  return `M${top.join('L')}L${bot.reverse().join('L')}Z`
+}
+
+// A single vertical spike (lens) for number badges. viewBox 0 0 40 100.
+export const SPIKE = 'M20,0 C21.5,30 26,44 34,50 C26,56 21.5,70 20,100 C18.5,70 14,56 6,50 C14,44 18.5,30 20,0 Z'

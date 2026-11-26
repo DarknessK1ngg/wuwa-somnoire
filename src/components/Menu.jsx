@@ -1,3 +1,4 @@
+import MarkEdge from './MarkEdge'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { SECTIONS } from '../content'
@@ -53,6 +54,7 @@ export default function Menu({ open, view, go, settings }) {
                       <motion.p variants={item} className="menu-group-name">{g}</motion.p>
                       {SECTIONS.filter((x) => x.group === g).map((x) => (
                         <motion.button key={x.id} variants={item} className={`menu-link ${view === x.id ? 'on' : ''}`} onClick={() => go(x.id)}>
+                          <MarkEdge seed={Number(x.num) + 71} spikes={2} />
                           <span className="menu-num">{x.num}</span>
                           <span className="menu-title">{x.title}</span>
                           <span className="menu-short">{x.short}</span>
@@ -75,9 +77,9 @@ export default function Menu({ open, view, go, settings }) {
 
                   <motion.p variants={item} className="menu-group-name">Your own colors</motion.p>
                   <motion.div variants={item} className="pickers">
-                    {[['c1', 'Wave'], ['c2', 'Glow'], ['c3', 'Depth'], ['accent', 'Accent']].map(([k, label]) => (
+                    {[['c1', 'Wave'], ['c2', 'Glow'], ['c3', 'Depth'], ['accent', 'Accent'], ['aura', 'Aura']].map(([k, label]) => (
                       <label key={k} className="picker">
-                        <input type="color" value={s[k]} onChange={(e) => update({ [k]: e.target.value, preset: 'custom' })} />
+                        <input type="color" value={s[k] || '#ffc870'} onChange={(e) => update({ [k]: e.target.value, preset: 'custom' })} />
                         <span>{label}</span>
                       </label>
                     ))}

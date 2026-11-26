@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { SECTIONS, WAVE } from '../content'
 import { profile } from '../mark'
+import { bus } from '../bus'
 
 const SP = 520 // world distance between section spikes
 const byId = Object.fromEntries(SECTIONS.map((s) => [s.id, s]))
@@ -78,6 +79,7 @@ export default function WaveMap({ go }) {
         edgeR.current.style.opacity = dx > 0 ? a : 0
       }
       s.off = Math.max(MIN - 600, Math.min(MAX + 600, s.off))
+      bus.pan = s.off
 
       // Hover boost
       for (const n of nodes) n.boost += ((s.hover === n.id ? 1.22 : 1) - n.boost) * Math.min(1, dt * 8)

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { markPath } from '../mark'
+import { shockAt } from '../bus'
 
 const ease = [0.2, 0.75, 0.1, 1]
 const BURST = 1.05 // seconds until the Mark bursts open
@@ -83,7 +84,7 @@ export default function Intro({ onExplore }) {
   useEffect(() => {
     const id = setTimeout(() => {
       const r = markRef.current?.getBoundingClientRect()
-      if (r) setBurstAt({ x: r.left + r.width / 2, y: r.top + r.height / 2 })
+      if (r) { setBurstAt({ x: r.left + r.width / 2, y: r.top + r.height / 2 }); shockAt(r.left + r.width / 2, r.top + r.height / 2) }
     }, BURST * 1000)
     return () => clearTimeout(id)
   }, [])
@@ -160,6 +161,7 @@ export default function Intro({ onExplore }) {
           if (leaving) return
           setLeaving(true)
           const r = e.currentTarget.getBoundingClientRect()
+          shockAt(r.left + r.width / 2, r.top + r.height / 2)
           onExplore(r.left + r.width / 2, r.top + r.height / 2)
         }}
       >

@@ -1,4 +1,5 @@
 import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react'
+import Scenery from './Scenery'
 
 // Camera framing per screen: the gradient "moves" with the visitor.
 const SHOTS = {
@@ -43,6 +44,7 @@ export default function Background({ shot, s }) {
           {...cam}
         />
       </ShaderGradientCanvas>
+      <Scenery shot={shot} s={s} />
       <div className={`veil veil-${shot}`} />
     </div>
   )

@@ -1,3 +1,4 @@
+import MarkEdge, { MarkBadge, MarkRule } from './MarkEdge'
 import { lazy, Suspense, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { SECTIONS, TERMS, GALLERY } from '../content'
@@ -29,6 +30,7 @@ function Key({ k }) {
 function Quote({ b }) {
   return (
     <motion.figure className={`quote ${b.big ? 'quote-big' : ''}`} {...reveal}>
+      <MarkEdge seed={(b.key || 'x').length} />
       <blockquote className="cn" lang="zh-Hant">{b.cn}</blockquote>
       <figcaption>
         <p className="en">{b.en}</p>
@@ -127,6 +129,7 @@ function Verdict() {
     <div className="verdict">
       {cards.map(([t, k, d, m], i) => (
         <motion.div key={t} className={`vcard vcard-${m}`} {...reveal} transition={{ ...reveal.transition, delay: i * 0.12 }}>
+          <MarkEdge seed={i + 3} spikes={2} />
           <span className="vk">{k}</span>
           <b>{t}</b>
           <p>{d}</p>
@@ -148,7 +151,8 @@ function Steps({ go }) {
       {steps.map(([id, t, d], i) => (
         <motion.li key={id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}>
           <button onClick={() => go(id)}>
-            <span className="step-n">{i + 1}</span>
+            <MarkEdge seed={i + 11} />
+            <MarkBadge n={i + 1} />
             <span><b>{t}</b><small>{d}</small></span>
             <span className="arrow">→</span>
           </button>
@@ -163,6 +167,7 @@ function Terms() {
     <div className="terms">
       {TERMS.map(([en, cn, d], i) => (
         <motion.div key={en} className="term" {...reveal} transition={{ ...reveal.transition, delay: (i % 4) * 0.05 }}>
+          <MarkEdge seed={i + 21} spikes={2} />
           <div className="term-head"><b>{en}</b><span className={cn === 'VSB' ? 'tag' : 'cn'}>{cn}</span></div>
           <p>{d}</p>
         </motion.div>
@@ -203,6 +208,7 @@ function Remnant() {
     <motion.div className="flowr" {...reveal}>
       {steps.map((s) => (
         <div key={s.t} className="flowr-step">
+          <MarkEdge seed={s.t.length + 41} spikes={2} />
           <div className={`orbit ${s.cls}`}>{Array.from({ length: s.n }, (_, i) => <i key={i} />)}</div>
           <b>{s.t} <span className="cn">{s.cn}</span></b>
           <p>{s.p}</p>
@@ -227,6 +233,7 @@ export default function Section({ id, go, settings }) {
       case 'rule':
         return (
           <motion.aside key={i} className={`rule ${b.tone === 'muted' ? 'rule-muted' : ''}`} {...reveal}>
+            <MarkEdge seed={i + 31} spikes={4} />
             <b>{b.title}</b>
             <p>{b.text}</p>
             {b.link && <a href={b.link[1]} target="_blank" rel="noreferrer">{b.link[0]} ↗</a>}
@@ -235,6 +242,7 @@ export default function Section({ id, go, settings }) {
       case 'objection':
         return (
           <motion.div key={i} className="objection" {...reveal}>
+            <MarkEdge seed={i + 61} spikes={4} />
             <p className="obj-q">“{b.q}”</p>
             <p className="cn obj-cn" lang="zh-Hant">{b.cn} <Key k={b.key} /></p>
             <p>{b.a}</p>
@@ -281,13 +289,14 @@ export default function Section({ id, go, settings }) {
           ))}
         </h2>
         <motion.p className="sec-lead" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5, duration: 0.8 }}>{sec.lead}</motion.p>
+        <motion.div className="mk-rule-wrap" initial={{ scaleX: 0, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ delay: 0.6, duration: 1.2, ease }}><MarkRule seed={sec.num.length + Number(sec.num) * 3} /></motion.div>
       </header>
 
       <div className="sec-body">{sec.blocks.map(renderBlock)}</div>
 
       <nav className="pager">
-        {prev ? <button onClick={() => go(prev.id)}><small>Previous</small>{prev.title}</button> : <span />}
-        {next ? <button className="next" onClick={() => go(next.id)}><small>Next</small>{next.title}</button> : <button className="next" onClick={() => go('map')}><small>Done</small>Back to the map</button>}
+        {prev ? <button onClick={() => go(prev.id)}><MarkEdge seed={51} /><small>Previous</small>{prev.title}</button> : <span />}
+        {next ? <button className="next" onClick={() => go(next.id)}><MarkEdge seed={52} /><small>Next</small>{next.title}</button> : <button className="next" onClick={() => go('map')}><MarkEdge seed={53} /><small>Done</small>Back to the map</button>}
       </nav>
 
       <AnimatePresence>
