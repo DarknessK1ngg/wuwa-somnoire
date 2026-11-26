@@ -26,15 +26,6 @@ function makeNodes() {
   })
 }
 
-// Lens-shaped opening inside the centre spike.
-function lens(ctx, cx, cy, r1, r2, hw) {
-  ctx.beginPath()
-  ctx.moveTo(cx, cy - r1)
-  ctx.quadraticCurveTo(cx + hw * 2, cy, cx, cy + r2)
-  ctx.quadraticCurveTo(cx - hw * 2, cy, cx, cy - r1)
-  ctx.closePath()
-}
-
 export default function WaveMap({ go, dive }) {
   const { SECTIONS, UI } = usePack()
   const IU = INNER_UI[UI.lang]
@@ -97,7 +88,7 @@ export default function WaveMap({ go, dive }) {
       // Hover boost; aiming at the centre core slowly opens the Mark
       for (const n of nodes) n.boost += ((s.hover === n.id || (n.x === 0 && s.hover === 'rift') ? 1.22 : 1) - n.boost) * Math.min(1, dt * 8)
       const want = s.hover === 'rift' || s.force ? 1 : 0
-      s.open += (want - s.open) * Math.min(1, dt * (want ? 1.5 : 3.2))
+      s.open += (want - s.open) * Math.min(1, dt * (want ? 1.1 : 2.6))
       const o = s.open * s.open * (3 - 2 * s.open)
       wrap.current.style.setProperty('--open', o.toFixed(3))
 
@@ -106,7 +97,7 @@ export default function WaveMap({ go, dive }) {
       ctx.clearRect(0, 0, W, H)
       const scaled = nodes.map((n) => {
         const g = n.x === 0 ? o : 0
-        return { ...n, up: n.up * k * 1.12 * (1 + 0.2 * g), down: n.down * k * 1.12 * (1 + 0.2 * g), w: n.w * Math.max(0.75, k) * 1.12 * (1 + 1.5 * g) }
+        return { ...n, up: n.up * k * 1.12 * (1 + 0.2 * g), down: n.down * k * 1.12 * (1 + 0.2 * g), w: n.w * Math.max(0.75, k) * 1.12 * (1 + 0.3 * g) }
       })
       const top = [], bot = []
       for (let sx = -4; sx <= W + 4; sx += 2) {
@@ -115,74 +106,112 @@ export default function WaveMap({ go, dive }) {
         top.push(u)
         bot.push(d)
       }
-      ctx.beginPath()
-      for (let i = 0; i < top.length; i++) ctx.lineTo(-4 + i * 2, base - top[i])
-      for (let i = bot.length - 1; i >= 0; i--) ctx.lineTo(-4 + i * 2, base + bot[i])
-      ctx.closePath()
+      const mark = new Path2D()
+      for (let i = 0; i < top.length; i++) mark.lineTo(-4 + i * 2, base - top[i])
+      for (let i = bot.length - 1; i >= 0; i--) mark.lineTo(-4 + i * 2, base + bot[i])
+      mark.closePath()
+      // wide soft glow, faint chromatic fringe, then the crisp body
+      ctx.save()
       ctx.shadowColor = s.accent
-      ctx.shadowBlur = 26
-      ctx.fillStyle = 'rgba(255,255,255,0.96)'
-      ctx.fill()
+      ctx.shadowBlur = 70
+      ctx.fillStyle = 'rgba(255,255,255,0.35)'
+      ctx.fill(mark)
+      ctx.restore()
+      ctx.save()
+      ctx.globalCompositeOperation = 'lighter'
+      ctx.translate(-1.6, 0); ctx.fillStyle = 'rgba(255,70,140,0.32)'; ctx.fill(mark)
+      ctx.translate(3.2, 0); ctx.fillStyle = 'rgba(70,220,255,0.32)'; ctx.fill(mark)
+      ctx.restore()
+      ctx.shadowColor = s.accent
+      ctx.shadowBlur = 18
+      ctx.fillStyle = 'rgba(255,255,255,0.97)'
+      ctx.fill(mark)
       ctx.shadowBlur = 0
 
-      // The opening: a glowing rift inside the centre spike, with layers receding into it
+      // The opening: aiming at the core splits the whole Mark open from the centre outward.
+      // Inside lies a golden hollow with the same waveform repeated inward without end.
       if (o > 0.01) {
         const cx = -s.off + W / 2
-        const cn = scaled.find((n) => n.x === 0)
-        const r1 = cn.up * cn.boost * 0.8, r2 = cn.down * cn.boost * 0.8
-        const hw = (4 + 54 * Math.max(0.7, k)) * o
-        const gr = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0)
-        gr.addColorStop(0, '#8a4d0c'); gr.addColorStop(0.22, s.aura); gr.addColorStop(0.5, '#ffe4a0'); gr.addColorStop(0.78, s.aura); gr.addColorStop(1, '#8a4d0c')
+        const rad = (60 + W * 0.95) * o
+        const n = top.length
+        const ti = new Float32Array(n), bi = new Float32Array(n)
+        let maxT = 6
+        for (let i = 0; i < n; i++) {
+          const d = Math.abs(-4 + i * 2 - cx)
+          let f = Math.min(1, Math.max(0, (rad - d) / 240))
+          f = f * f * (3 - 2 * f)
+          ti[i] = Math.max(0, top[i] - 3.2) * f
+          bi[i] = Math.max(0, bot[i] - 3.2) * f
+          if (ti[i] > maxT) maxT = ti[i]
+          if (bi[i] > maxT) maxT = bi[i]
+        }
+        const hollow = (sc) => {
+          const h = new Path2D()
+          for (let i = 0; i < n; i++) h.lineTo(-4 + i * 2, base - ti[i] * sc)
+          for (let i = n - 1; i >= 0; i--) h.lineTo(-4 + i * 2, base + bi[i] * sc)
+          h.closePath()
+          return h
+        }
+        const inner = hollow(1)
+        const gr = ctx.createLinearGradient(0, base - maxT, 0, base + maxT)
+        gr.addColorStop(0, '#4a2304'); gr.addColorStop(0.28, s.aura); gr.addColorStop(0.5, '#fff0c4'); gr.addColorStop(0.72, s.aura); gr.addColorStop(1, '#4a2304')
         ctx.save()
         ctx.shadowColor = s.aura
-        ctx.shadowBlur = 50 * o
-        lens(ctx, cx, base, r1, r2, hw)
+        ctx.shadowBlur = 46 * o
         ctx.fillStyle = gr
-        ctx.fill()
+        ctx.fill(inner)
         ctx.restore()
         ctx.save()
-        lens(ctx, cx, base, r1, r2, hw)
-        ctx.clip()
-        // recursion: the same opening repeated, each one smaller, all drifting inward
-        const N = 8
-        for (let i = 0; i < N; i++) {
-          const ph = ((t * 0.32 + i / N) % 1)
+        ctx.clip(inner)
+        // the recursion: the hollow contains itself, again and again, drifting inward
+        const N = 9
+        for (let j = 0; j < N; j++) {
+          const ph = (t * 0.28 + j / N) % 1
           const sc = 1 - ph
-          lens(ctx, cx, base, r1 * sc, r2 * sc, hw * sc)
-          ctx.lineWidth = 1.2 + 2.2 * sc
-          ctx.strokeStyle = `rgba(92, 46, 2, ${(0.75 * sc * o).toFixed(3)})`
-          ctx.stroke()
+          ctx.lineWidth = 0.8 + 2.4 * sc
+          ctx.strokeStyle = `rgba(90, 44, 2, ${(0.72 * sc * o).toFixed(3)})`
+          ctx.stroke(hollow(sc))
         }
-        const core = ctx.createRadialGradient(cx, base, 0, cx, base, Math.max(4, hw * 0.8))
-        core.addColorStop(0, 'rgba(255,250,230,0.9)'); core.addColorStop(1, 'rgba(255,255,255,0)')
+        // bright seam along the baseline and a hot core at the centre
+        const seam = ctx.createLinearGradient(cx - rad, 0, cx + rad, 0)
+        seam.addColorStop(0, 'rgba(255,255,255,0)'); seam.addColorStop(0.5, 'rgba(255,252,236,0.95)'); seam.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = seam
+        ctx.fillRect(cx - rad, base - 1.5, rad * 2, 3)
+        const core = ctx.createRadialGradient(cx, base, 0, cx, base, 30 + 90 * o)
+        core.addColorStop(0, 'rgba(255,250,230,0.9)'); core.addColorStop(1, 'rgba(255,250,230,0)')
         ctx.fillStyle = core
-        ctx.fillRect(cx - hw * 2, base - r1, hw * 4, r1 + r2)
+        ctx.fillRect(cx - 140, base - 140, 280, 280)
         ctx.restore()
-        lens(ctx, cx, base, r1, r2, hw)
-        ctx.lineWidth = 2.2
+        ctx.lineWidth = 2
         ctx.strokeStyle = `rgba(20, 12, 4, ${(0.85 * o).toFixed(3)})`
-        ctx.stroke()
-        // thorns along the edges, like the rim of a Tacet Field
-        ctx.fillStyle = `rgba(14, 10, 20, ${(0.9 * o).toFixed(3)})`
-        for (let j = 1; j < 14; j++) {
-          const u = j / 14
-          const yy = base - r1 + (r1 + r2) * u
-          const tt = u
-          const ex = 2 * (1 - tt) * tt * hw * 2 // quadratic edge offset
-          for (const side of [-1, 1]) {
-            const x0 = cx + side * ex
-            const len = (5 + 9 * Math.abs(Math.sin(j * 7.3 + side))) * o
+        ctx.stroke(inner)
+        // thorns along the rim, like the edge of a Tacet Field
+        ctx.fillStyle = `rgba(14, 10, 20, ${(0.92 * o).toFixed(3)})`
+        for (let i = 3; i < n - 3; i += 9) {
+          const x = -4 + i * 2
+          for (const [hgt, dir] of [[ti[i], -1], [bi[i], 1]]) {
+            if (hgt < 9) continue
+            const y0 = base + dir * hgt
+            const len = (4 + 8 * Math.abs(Math.sin(i * 1.7 + dir))) * Math.min(1, hgt / 30)
+            const lean = Math.sin(i * 0.9) * 3
             ctx.beginPath()
-            ctx.moveTo(x0, yy - 3)
-            ctx.lineTo(x0 + side * len, yy - 1 + Math.sin(j * 3.1) * 3)
-            ctx.lineTo(x0, yy + 3)
+            ctx.moveTo(x - 3, y0)
+            ctx.lineTo(x + lean, y0 + dir * len)
+            ctx.lineTo(x + 3, y0)
             ctx.closePath()
             ctx.fill()
           }
         }
-        // golden motes pulled out of the opening
-        if (motionOn() && Math.random() < 0.5 * o) {
-          s.parts.push({ wx: (Math.random() - 0.5) * hw * 2, y: (Math.random() - 0.5) * (r1 + r2) * 0.6, vy: (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 40), life: 0, max: 1 + Math.random() * 1.5, r: 0.8 + Math.random() * 1.8, gold: true })
+        // golden motes escaping through the seam
+        if (motionOn()) {
+          for (let q = 0; q < 2; q++) {
+            if (Math.random() > 0.7 * o) continue
+            const sx = cx + (Math.random() - 0.5) * rad * 1.6
+            const i = Math.round((sx + 4) / 2)
+            if (i < 0 || i >= n || ti[i] < 6) continue
+            const up = Math.random() < 0.5
+            s.parts.push({ wx: sx + s.off - W / 2, y: up ? -ti[i] * 0.5 : bi[i] * 0.5, vy: (up ? -1 : 1) * (25 + Math.random() * 45), life: 0, max: 1 + Math.random() * 1.6, r: 0.8 + Math.random() * 1.8, gold: true })
+          }
         }
       }
 

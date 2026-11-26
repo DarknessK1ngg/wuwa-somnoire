@@ -9,6 +9,7 @@ import Logo from './components/Logo'
 import InnerLayer from './components/InnerLayer'
 import CharacterView from './components/CharacterView'
 import Dive from './components/Dive'
+import CursorAura from './components/CursorAura'
 import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
 import { LangCtx, PACKS } from './lang'
@@ -123,6 +124,7 @@ export default function App() {
         </AnimatePresence>
       </main>
 
+      <CursorAura />
       {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}
       {ripple && <Shockwave key={ripple.k} x={ripple.x} y={ripple.y} size={1.2} />}
 

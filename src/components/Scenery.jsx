@@ -27,6 +27,16 @@ uniform vec4 uShock;
 uniform vec3 uAura, uFog;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  vec2 u = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash(i), hash(i + vec2(1.0, 0.0)), u.x), mix(hash(i + vec2(0.0, 1.0)), hash(i + vec2(1.0, 1.0)), u.x), u.y);
+}
+float fbm(vec2 p) {
+  float v = 0.0, a = 0.5;
+  for (int i = 0; i < 4; i++) { v += a * vnoise(p); p = p * 2.03 + 17.1; a *= 0.5; }
+  return v;
+}
 
 vec2 toUv(vec2 q) { return vec2(q.x * 0.5 + 0.5, q.y + 0.5); }
 
@@ -108,9 +118,24 @@ void main() {
   // haze band between far and mid
   float haze = smoothstep(-0.05, -0.3, p.y) * 0.25;
   col = mix(col, uFog * 0.9, haze * 0.5); a = max(a, haze);
+  // drifting mist between the far ridge and the floating shards
+  vec2 fp = p / uZoom + vec2((uPan + uShot.x) * 0.35 + uTime * 0.012, uTime * 0.004);
+  float mist = fbm(fp * vec2(1.6, 3.2) + warp * 2.0);
+  mist = smoothstep(0.42, 0.85, mist) * smoothstep(0.35, -0.25, p.y) * 0.55 * uMotion + smoothstep(0.42, 0.85, mist) * smoothstep(0.35, -0.25, p.y) * 0.25 * (1.0 - uMotion);
+  col = mix(col, uFog * 1.15 + 0.03, mist * 0.55); a = max(a, mist * 0.7);
   vec3 midC = mix(m.rgb, uFog, 0.12);
   col = midC * m.a + col * (1.0 - m.a); a = m.a + a * (1.0 - m.a);
   col = n.rgb * n.a + col * (1.0 - n.a); a = n.a + a * (1.0 - n.a);
+
+  // Light shafts from the pale planet, hidden behind whatever stands in front.
+  vec2 pp = (vec2(0.32, 0.24) - vec2((uPan + uShot.x) * 0.04, uShot.y * 0.024) + uMouse * 0.0014) * uZoom;
+  vec2 rd = p - pp;
+  float rl = length(rd);
+  float ang = atan(rd.y, rd.x);
+  float shafts = pow(vnoise(vec2(ang * 7.0, uTime * 0.08)), 3.0) + 0.5 * pow(vnoise(vec2(ang * 19.0 + 3.0, uTime * 0.05)), 4.0);
+  float occl = (1.0 - n.a) * (1.0 - m.a * 0.85) * (1.0 - fa.a * 0.6);
+  float rays = shafts * exp(-rl * 1.6) * smoothstep(0.05, 0.25, rl) * occl * 0.42;
+  col += vec3(0.86, 0.84, 1.0) * rays; a = max(a, rays);
 
   // Aura: light in the cracks, breathing.
   float pulse = 0.7 + 0.3 * sin(uTime * 1.3 + p.x * 4.0) * uMotion;

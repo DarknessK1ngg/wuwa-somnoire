@@ -697,3 +697,16 @@ main { position: relative; z-index: 2; min-height: 100svh; }
   opacity: clamp(0, calc((var(--near) - .5) * 2.5), 1); text-shadow: 0 1px 8px rgba(0, 0, 0, .9); }
 .wn-rift .wn-ray { background: linear-gradient(var(--dir, 180deg), #fff, var(--aura) 40%, transparent); box-shadow: 0 0 10px var(--aura); }
 :root[data-motion='off'] .rift-core { animation: none; }
+
+/* ---------- Cursor aura and card spotlight ---------- */
+.cursor-ring, .cursor-dot { position: fixed; left: 0; top: 0; z-index: 80; pointer-events: none; opacity: 0; transition: opacity .3s; }
+.cursor-ring { width: 34px; height: 34px; margin: -17px 0 0 -17px; border-radius: 50%; border: 1px solid color-mix(in srgb, var(--aura) 70%, transparent);
+  background: radial-gradient(circle, color-mix(in srgb, var(--aura) 18%, transparent), transparent 70%); box-shadow: 0 0 18px color-mix(in srgb, var(--aura) 35%, transparent); mix-blend-mode: screen; }
+.cursor-dot { width: 4px; height: 4px; margin: -2px 0 0 -2px; border-radius: 50%; background: #fff; box-shadow: 0 0 8px var(--aura); }
+:root[data-motion='off'] .cursor-ring { display: none; }
+@media (pointer: coarse) { .cursor-ring, .cursor-dot { display: none; } }
+:is(.quote, .rule, .objection, .steps button, .term, .pager button, .menu-link, .abil li, .mode-btn)::after {
+  content: ''; position: absolute; inset: 0; z-index: -1; pointer-events: none; opacity: 0; transition: opacity .35s;
+  background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--aura) 16%, transparent), transparent 60%);
+}
+:is(.quote, .rule, .objection, .steps button, .term, .pager button, .menu-link, .abil li, .mode-btn):hover::after { opacity: 1; }
