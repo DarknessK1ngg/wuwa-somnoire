@@ -8,9 +8,8 @@ import { INNER_UI } from '../characters'
 
 const SP = 520 // world distance between section spikes
 const ORDER = Object.entries(WAVE).sort((a, b) => a[1] - b[1]).map(([id]) => id)
-const GATE = (Math.max(...Object.values(WAVE)) + 1.25) * SP // the inner-layer spike
 const MIN = Math.min(...Object.values(WAVE)) * SP
-const MAX = GATE
+const MAX = Math.max(...Object.values(WAVE)) * SP
 
 function makeNodes() {
   return ORDER.map((id) => {
@@ -24,7 +23,16 @@ function makeNodes() {
       w: centre ? 70 : 52,
       boost: 1,
     }
-  }).concat([{ id: 'gate', gate: true, x: GATE, above: true, up: 240, down: 205, w: 66, boost: 1 }])
+  })
+}
+
+// Lens-shaped opening inside the centre spike.
+function lens(ctx, cx, cy, r1, r2, hw) {
+  ctx.beginPath()
+  ctx.moveTo(cx, cy - r1)
+  ctx.quadraticCurveTo(cx + hw * 2, cy, cx, cy + r2)
+  ctx.quadraticCurveTo(cx - hw * 2, cy, cx, cy - r1)
+  ctx.closePath()
 }
 
 export default function WaveMap({ go, dive }) {
@@ -34,7 +42,7 @@ export default function WaveMap({ go, dive }) {
   const wrap = useRef(), cv = useRef(), layer = useRef(), tilt = useRef(), view = useRef(), edgeL = useRef(), edgeR = useRef()
   const els = useRef({})
   const nodes = useMemo(makeNodes, [])
-  const st = useRef({ off: 0, mx: null, my: null, drag: null, target: null, hover: null, touch: false, W: 0, H: 0, k: 1, accent: '#7ff2e6', parts: [] })
+  const st = useRef({ open: 0, force: false, aura: '#ffc870', off: 0, mx: null, my: null, drag: null, target: null, hover: null, touch: false, W: 0, H: 0, k: 1, accent: '#7ff2e6', parts: [] })
   const [touch, setTouch] = useState(false)
 
   useEffect(() => {
@@ -54,7 +62,7 @@ export default function WaveMap({ go, dive }) {
       wrap.current.style.setProperty('--k', s.k)
     }
     resize()
-    const readAccent = () => { s.accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#7ff2e6' }
+    const readAccent = () => { const cs = getComputedStyle(document.documentElement); s.accent = cs.getPropertyValue('--accent').trim() || '#7ff2e6'; s.aura = cs.getPropertyValue('--aura').trim() || '#ffc870' }
     readAccent()
     const ro = new ResizeObserver(resize)
     ro.observe(wrap.current)
@@ -86,13 +94,20 @@ export default function WaveMap({ go, dive }) {
       s.off = Math.max(MIN - 600, Math.min(MAX + 600, s.off))
       bus.pan = s.off
 
-      // Hover boost
-      for (const n of nodes) n.boost += ((s.hover === n.id ? 1.22 : 1) - n.boost) * Math.min(1, dt * 8)
+      // Hover boost; aiming at the centre core slowly opens the Mark
+      for (const n of nodes) n.boost += ((s.hover === n.id || (n.x === 0 && s.hover === 'rift') ? 1.22 : 1) - n.boost) * Math.min(1, dt * 8)
+      const want = s.hover === 'rift' || s.force ? 1 : 0
+      s.open += (want - s.open) * Math.min(1, dt * (want ? 1.5 : 3.2))
+      const o = s.open * s.open * (3 - 2 * s.open)
+      wrap.current.style.setProperty('--open', o.toFixed(3))
 
       // Draw the Mark
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, W, H)
-      const scaled = nodes.map((n) => ({ ...n, up: n.up * k * 1.12, down: n.down * k * 1.12, w: n.w * Math.max(0.75, k) * 1.12 }))
+      const scaled = nodes.map((n) => {
+        const g = n.x === 0 ? o : 0
+        return { ...n, up: n.up * k * 1.12 * (1 + 0.2 * g), down: n.down * k * 1.12 * (1 + 0.2 * g), w: n.w * Math.max(0.75, k) * 1.12 * (1 + 1.5 * g) }
+      })
       const top = [], bot = []
       for (let sx = -4; sx <= W + 4; sx += 2) {
         const wx = sx + s.off - W / 2
@@ -110,6 +125,67 @@ export default function WaveMap({ go, dive }) {
       ctx.fill()
       ctx.shadowBlur = 0
 
+      // The opening: a glowing rift inside the centre spike, with layers receding into it
+      if (o > 0.01) {
+        const cx = -s.off + W / 2
+        const cn = scaled.find((n) => n.x === 0)
+        const r1 = cn.up * cn.boost * 0.8, r2 = cn.down * cn.boost * 0.8
+        const hw = (4 + 54 * Math.max(0.7, k)) * o
+        const gr = ctx.createLinearGradient(cx - hw, 0, cx + hw, 0)
+        gr.addColorStop(0, '#8a4d0c'); gr.addColorStop(0.22, s.aura); gr.addColorStop(0.5, '#ffe4a0'); gr.addColorStop(0.78, s.aura); gr.addColorStop(1, '#8a4d0c')
+        ctx.save()
+        ctx.shadowColor = s.aura
+        ctx.shadowBlur = 50 * o
+        lens(ctx, cx, base, r1, r2, hw)
+        ctx.fillStyle = gr
+        ctx.fill()
+        ctx.restore()
+        ctx.save()
+        lens(ctx, cx, base, r1, r2, hw)
+        ctx.clip()
+        // recursion: the same opening repeated, each one smaller, all drifting inward
+        const N = 8
+        for (let i = 0; i < N; i++) {
+          const ph = ((t * 0.32 + i / N) % 1)
+          const sc = 1 - ph
+          lens(ctx, cx, base, r1 * sc, r2 * sc, hw * sc)
+          ctx.lineWidth = 1.2 + 2.2 * sc
+          ctx.strokeStyle = `rgba(92, 46, 2, ${(0.75 * sc * o).toFixed(3)})`
+          ctx.stroke()
+        }
+        const core = ctx.createRadialGradient(cx, base, 0, cx, base, Math.max(4, hw * 0.8))
+        core.addColorStop(0, 'rgba(255,250,230,0.9)'); core.addColorStop(1, 'rgba(255,255,255,0)')
+        ctx.fillStyle = core
+        ctx.fillRect(cx - hw * 2, base - r1, hw * 4, r1 + r2)
+        ctx.restore()
+        lens(ctx, cx, base, r1, r2, hw)
+        ctx.lineWidth = 2.2
+        ctx.strokeStyle = `rgba(20, 12, 4, ${(0.85 * o).toFixed(3)})`
+        ctx.stroke()
+        // thorns along the edges, like the rim of a Tacet Field
+        ctx.fillStyle = `rgba(14, 10, 20, ${(0.9 * o).toFixed(3)})`
+        for (let j = 1; j < 14; j++) {
+          const u = j / 14
+          const yy = base - r1 + (r1 + r2) * u
+          const tt = u
+          const ex = 2 * (1 - tt) * tt * hw * 2 // quadratic edge offset
+          for (const side of [-1, 1]) {
+            const x0 = cx + side * ex
+            const len = (5 + 9 * Math.abs(Math.sin(j * 7.3 + side))) * o
+            ctx.beginPath()
+            ctx.moveTo(x0, yy - 3)
+            ctx.lineTo(x0 + side * len, yy - 1 + Math.sin(j * 3.1) * 3)
+            ctx.lineTo(x0, yy + 3)
+            ctx.closePath()
+            ctx.fill()
+          }
+        }
+        // golden motes pulled out of the opening
+        if (motionOn() && Math.random() < 0.5 * o) {
+          s.parts.push({ wx: (Math.random() - 0.5) * hw * 2, y: (Math.random() - 0.5) * (r1 + r2) * 0.6, vy: (Math.random() < 0.5 ? -1 : 1) * (20 + Math.random() * 40), life: 0, max: 1 + Math.random() * 1.5, r: 0.8 + Math.random() * 1.8, gold: true })
+        }
+      }
+
       // Remnant motes rising from the Mark
       if (motionOn() && s.parts.length < 140 && Math.random() < 0.6) {
         const sx = Math.random() * W
@@ -118,8 +194,8 @@ export default function WaveMap({ go, dive }) {
         const upSide = Math.random() < 0.6
         s.parts.push({ wx, y: upSide ? -u : d, vy: (upSide ? -1 : 1) * (12 + Math.random() * 30), life: 0, max: 1.5 + Math.random() * 2.5, r: 0.6 + Math.random() * 1.6 })
       }
-      ctx.fillStyle = s.accent
       s.parts = s.parts.filter((p) => {
+        ctx.fillStyle = p.gold ? s.aura : s.accent
         p.life += dt
         p.y += p.vy * dt
         p.wx += Math.sin(p.life * 3 + p.r * 9) * 6 * dt
@@ -172,6 +248,14 @@ export default function WaveMap({ go, dive }) {
   }, [nodes])
 
   const s = st.current
+  const enterRift = (e) => {
+    const r = e.currentTarget.parentElement.querySelector('.rift-core').getBoundingClientRect()
+    const x = r.left + r.width / 2, y = r.top + r.height / 2
+    if (s.open > 0.7) { dive(x, y, 'inner'); return }
+    s.force = true
+    s.target = 0
+    setTimeout(() => dive(x, y, 'inner'), 700)
+  }
   const handlers = {
     onPointerMove: (e) => {
       if (e.pointerType === 'mouse') { s.touch = false; s.mx = e.clientX; s.my = e.clientY }
@@ -204,32 +288,35 @@ export default function WaveMap({ go, dive }) {
           <motion.canvas ref={cv} className="wave-cv" initial={{ scaleX: 0.02, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ duration: 1.1, ease: [0.2, 0.8, 0.1, 1] }} />
           <div className="wave-layer" ref={layer}>
             {nodes.map((n) => {
-              if (n.gate) {
+              const sec = byId[n.id]
+              if (WAVE[n.id] === 0) {
                 return (
-                  <button
-                    key="gate"
-                    ref={(el) => { els.current.gate = el }}
-                    className="wn wn-up wn-gate"
+                  <div
+                    key={n.id}
+                    ref={(el) => { els.current[n.id] = el }}
+                    className="wn wn-up wn-core wn-rift"
                     style={{ left: n.x, '--amp': n.up * 1.12 }}
-                    onPointerEnter={() => { s.hover = 'gate' }}
-                    onPointerLeave={() => { if (s.hover === 'gate') s.hover = null }}
-                    onFocus={() => { s.hover = 'gate'; s.target = n.x }}
-                    onBlur={() => { if (s.hover === 'gate') s.hover = null }}
-                    onClick={(e) => dive(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2, 'inner')}
-                    aria-label={`${IU.gate}: ${IU.gateShort}`}
                   >
-                    <span className="wn-hit" />
+                    <button
+                      className="wn-hit rift-hit"
+                      onPointerEnter={() => { s.hover = 'rift' }}
+                      onPointerLeave={() => { if (s.hover === 'rift') s.hover = null }}
+                      onFocus={() => { s.hover = 'rift'; s.target = 0 }}
+                      onBlur={() => { if (s.hover === 'rift') s.hover = null }}
+                      onClick={enterRift}
+                      aria-label={`${IU.gate}: ${UI.map.coreHint}`}
+                    />
                     <span className="wn-ray" />
-                    <span className="gate-core" aria-hidden="true"><i /><i /><i /><b /></span>
-                    <span className="wn-tag">
-                      <span className="wn-num">{IU.gateNum}</span>
-                      <b>{IU.gate}</b>
-                      <small>{IU.gateShort}</small>
-                    </span>
-                  </button>
+                    <span className="spike-core rift-core" aria-hidden="true" />
+                    <button className="wn-tag wn-tag-btn" onClick={() => go(n.id)} aria-label={`${sec.title}: ${sec.short}`}>
+                      <span className="wn-num">{sec.num}</span>
+                      <b>{UI.map.core}</b>
+                      <small>{UI.map.coreShort}</small>
+                      <em className="rift-hint">{UI.map.coreHint}</em>
+                    </button>
+                  </div>
                 )
               }
-              const sec = byId[n.id]
               return (
                 <button
                   key={n.id}
@@ -278,13 +365,6 @@ export default function WaveMap({ go, dive }) {
               aria-label={`${UI.map.travel} ${byId[id].title}`}
             />
           ))}
-          <button
-            className="mini-dot mini-gate"
-            style={{ left: `${((GATE - (MIN - 600)) / span) * 100}%` }}
-            onClick={() => { s.target = GATE }}
-            title={IU.gate}
-            aria-label={`${UI.map.travel} ${IU.gate}`}
-          />
         </div>
       </footer>
     </motion.section>

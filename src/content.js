@@ -472,6 +472,7 @@ export const UI = {
     eyebrow: 'Follow the Mark · every spike opens a door',
     hintMouse: 'Move toward an edge to travel · hover a spike · click to enter',
     hintTouch: 'Drag to travel along the Mark · tap a spike to enter',
+    coreHint: 'Aim at the core and the Mark opens · click to dive in',
     mini: 'Sections along the Mark', travel: 'Travel to',
   },
   menu: {
