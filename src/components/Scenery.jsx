@@ -148,6 +148,14 @@ void main() {
   vec3 aura = uAura * glow * 1.35 + vec3(1.0) * pow(glow, 3.0) * 0.35;
   col += aura; a = max(a, min(1.0, glow * 0.85));
 
+  // Twinkling stars in the open sky, behind everything else
+  vec2 sg = (p / uZoom + vec2((uPan + uShot.x) * 0.02, 0.0)) * 90.0;
+  vec2 sc = floor(sg);
+  float sr = hash(sc + 41.0);
+  float star = step(0.985, sr) * smoothstep(0.35, 0.0, length(fract(sg) - 0.5)) * (0.5 + 0.5 * sin(uTime * (1.5 + sr * 4.0) + sr * 50.0));
+  star *= smoothstep(-0.05, 0.3, p.y) * (1.0 - fa.a) * (1.0 - m.a) * (1.0 - n.a);
+  col += vec3(0.95, 0.95, 1.0) * star * 0.9; a = max(a, star * 0.9);
+
   // Embers (gold) and ash (pale).
   float e = motes(p + warp, 26.0, 0.10, 1.0) + motes(p * 1.6 + warp, 26.0, 0.16, 9.0) * 0.7;
   float ash = motes(p * 0.8 + warp * 0.5, 34.0, 0.05, 4.0) * 0.5;
@@ -270,7 +278,7 @@ export default function Scenery({ shot, s }) {
     <Canvas
       className="scenery"
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
-      dpr={[1, 1.5]}
+      dpr={[1, 1.75]}
       gl={{ antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' }}
       flat
       linear

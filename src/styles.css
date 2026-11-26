@@ -710,3 +710,12 @@ main { position: relative; z-index: 2; min-height: 100svh; }
   background: radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), color-mix(in srgb, var(--aura) 16%, transparent), transparent 60%);
 }
 :is(.quote, .rule, .objection, .steps button, .term, .pager button, .menu-link, .abil li, .mode-btn):hover::after { opacity: 1; }
+
+/* ---------- Headline shimmer ---------- */
+.sec-title span, .inner-head h2, .char-name .scramble {
+  background: linear-gradient(100deg, #fff 0%, #fff 40%, color-mix(in srgb, var(--aura) 70%, #fff) 50%, #fff 60%, #fff 100%);
+  background-size: 300% 100%; -webkit-background-clip: text; background-clip: text; color: transparent;
+  animation: shimmer 7s ease-in-out infinite; }
+@keyframes shimmer { 0%, 30% { background-position: 100% 0; } 70%, 100% { background-position: 0% 0; } }
+:root[data-mode='light'] :is(.sec-title span, .inner-head h2, .char-name .scramble) { background-image: linear-gradient(100deg, #1b1236 0%, #1b1236 40%, var(--accent) 50%, #1b1236 60%, #1b1236 100%); }
+:root[data-motion='off'] :is(.sec-title span, .inner-head h2, .char-name .scramble) { animation: none; }

@@ -185,23 +185,70 @@ export default function WaveMap({ go, dive }) {
         ctx.lineWidth = 2
         ctx.strokeStyle = `rgba(20, 12, 4, ${(0.85 * o).toFixed(3)})`
         ctx.stroke(inner)
-        // thorns along the rim, like the edge of a Tacet Field
-        ctx.fillStyle = `rgba(14, 10, 20, ${(0.92 * o).toFixed(3)})`
-        for (let i = 3; i < n - 3; i += 9) {
+        // thorns along the rim, like the edge of a Tacet Field: dark, tapered,
+        // leaning outward along the rim's normal, longer where the hollow is taller
+        const hr = (j) => Math.sin(j * 12.9898 + 78.233) * 43758.5453 % 1
+        for (let i = 4; i < n - 4; i += 4) {
           const x = -4 + i * 2
-          for (const [hgt, dir] of [[ti[i], -1], [bi[i], 1]]) {
-            if (hgt < 9) continue
+          for (const dir of [-1, 1]) {
+            const H = dir < 0 ? ti : bi
+            const hgt = H[i]
+            if (hgt < 10) continue
+            const r = Math.abs(hr(i * (dir + 3)))
+            if (r < 0.22) continue
+            const slope = (H[i + 2] - H[i - 2]) / 8
+            let nx = -slope, ny = dir
+            const l = Math.hypot(nx, ny); nx /= l; ny /= l
+            const tx = -ny * dir, ty = nx * dir // along the rim
             const y0 = base + dir * hgt
-            const len = (4 + 8 * Math.abs(Math.sin(i * 1.7 + dir))) * Math.min(1, hgt / 30)
-            const lean = Math.sin(i * 0.9) * 3
+            const len = (8 + 24 * r) * Math.min(1, hgt / 40) * o
+            const w = 2.6 + 3.2 * r
+            const bend = (r - 0.5) * 0.6
+            const tipx = x + (nx + tx * bend) * len, tipy = y0 + (ny + ty * bend) * len
             ctx.beginPath()
-            ctx.moveTo(x - 3, y0)
-            ctx.lineTo(x + lean, y0 + dir * len)
-            ctx.lineTo(x + 3, y0)
+            ctx.moveTo(x - tx * w, y0 - ty * w)
+            ctx.quadraticCurveTo(x + nx * len * 0.55 - tx * w * 0.2, y0 + ny * len * 0.55 - ty * w * 0.2, tipx, tipy)
+            ctx.quadraticCurveTo(x + nx * len * 0.45 + tx * w * 0.5, y0 + ny * len * 0.45 + ty * w * 0.5, x + tx * w, y0 + ty * w)
             ctx.closePath()
+            ctx.fillStyle = `rgba(12, 9, 18, ${(0.95 * o).toFixed(3)})`
             ctx.fill()
+            ctx.strokeStyle = `rgba(255, 214, 150, ${(0.28 * o).toFixed(3)})`
+            ctx.lineWidth = 0.8
+            ctx.stroke()
+            // a smaller companion spike beside the big ones
+            if (r > 0.75) {
+              const l2 = len * 0.5, ox = tx * w * 1.6, oy = ty * w * 1.6
+              ctx.beginPath()
+              ctx.moveTo(x + ox - tx * 2, y0 + oy - ty * 2)
+              ctx.lineTo(x + ox + (nx - tx * 0.35) * l2, y0 + oy + (ny - ty * 0.35) * l2)
+              ctx.lineTo(x + ox + tx * 2, y0 + oy + ty * 2)
+              ctx.closePath()
+              ctx.fill()
+            }
           }
         }
+        // light leaking out of the tallest openings
+        ctx.save()
+        ctx.globalCompositeOperation = 'lighter'
+        for (let i = 6; i < n - 6; i += 3) {
+          const hv = ti[i]
+          if (hv < 40 || hv < ti[i - 3] || hv < ti[i + 3]) continue
+          const x = -4 + i * 2
+          const flick = 0.75 + 0.25 * Math.sin(t * 3 + i)
+          const bh = (120 + hv * 1.4) * o
+          const bg = ctx.createLinearGradient(0, base - hv, 0, base - hv - bh)
+          bg.addColorStop(0, `rgba(255, 210, 130, ${(0.32 * o * flick).toFixed(3)})`)
+          bg.addColorStop(1, 'rgba(255, 210, 130, 0)')
+          ctx.fillStyle = bg
+          ctx.beginPath()
+          ctx.moveTo(x - 6, base - hv)
+          ctx.lineTo(x - 26, base - hv - bh)
+          ctx.lineTo(x + 26, base - hv - bh)
+          ctx.lineTo(x + 6, base - hv)
+          ctx.closePath()
+          ctx.fill()
+        }
+        ctx.restore()
         // golden motes escaping through the seam
         if (motionOn()) {
           for (let q = 0; q < 2; q++) {
