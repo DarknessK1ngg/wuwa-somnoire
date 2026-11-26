@@ -8,6 +8,8 @@ const SHOTS = {
   intro: { x: 0, y: 0.02, zoom: 1.0, dim: 1 },
   map: { x: 0.35, y: -0.06, zoom: 1.08, dim: 0.95 },
   section: { x: -0.5, y: 0.1, zoom: 1.22, dim: 0.45 },
+  inner: { x: 1.4, y: 0.2, zoom: 1.55, dim: 0.6 },
+  char: { x: 1.9, y: 0.12, zoom: 1.35, dim: 0.42 },
 }
 
 const vert = /* glsl */ `

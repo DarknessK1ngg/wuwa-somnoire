@@ -2,6 +2,7 @@ import MarkEdge from './MarkEdge'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { usePack, SITES } from '../lang'
+import { CHARACTERS, INNER_UI } from '../characters'
 import { PRESETS } from '../settings'
 
 export function Burger({ open, onClick }) {
@@ -64,6 +65,23 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                       ))}
                     </div>
                   ))}
+                  <div className="menu-group">
+                    <motion.p variants={item} className="menu-group-name">{INNER_UI[UI.lang].eyebrow}</motion.p>
+                    <motion.button variants={item} className={`menu-link ${view === 'inner' ? 'on' : ''}`} onClick={() => go('inner')}>
+                      <MarkEdge seed={140} spikes={2} />
+                      <span className="menu-num">∞</span>
+                      <span className="menu-title">{INNER_UI[UI.lang].title}</span>
+                      <span className="menu-short">{CHARACTERS.map((c) => c.name[UI.lang]).join(' · ')}</span>
+                    </motion.button>
+                    {CHARACTERS.map((c, i) => (
+                      <motion.button key={c.id} variants={item} className={`menu-link ${view === `c-${c.id}` ? 'on' : ''}`} onClick={() => go(`c-${c.id}`)}>
+                        <MarkEdge seed={141 + i} spikes={2} />
+                        <span className="menu-num">{['I', 'II', 'III', 'IV'][i]}</span>
+                        <span className="menu-title">{c.name[UI.lang]}</span>
+                        <span className="menu-short">{c.title[UI.lang]}</span>
+                      </motion.button>
+                    ))}
+                  </div>
                 </motion.div>
               ) : (
                 <motion.div key="look" initial="hidden" animate="show" exit={{ opacity: 0, y: 10 }} variants={list} className="menu-look">

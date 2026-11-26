@@ -75,7 +75,7 @@ export const SECTIONS = [
         cn: '曾在悲鳴中逝去的一部分穗波市市民，正以回音的形式「生活」於索諾拉中',
         en: '"Some of the Honami citizens who died in the Lament now \'live\' inside the Sonoro in the form of Remnant." The people inside a Sonoro are made of it too.',
         who: 'Glossary: Human Reverberations',
-        key: 'Term851065',
+        key: 'Term851065_Desc',
         ver: '2.8',
       },
       {
@@ -143,7 +143,7 @@ export const SECTIONS = [
         cn: '「回音」富集形成的超自然空間區域，學界稱之為「索諾拉」',
         en: '"A supernatural spatial region formed where Remnant energy gathers. Scholars call it a Sonoro."',
         who: 'Glossary',
-        key: 'Term850077',
+        key: 'Term850077_Desc',
         ver: '2.4',
       },
       {
@@ -151,7 +151,7 @@ export const SECTIONS = [
         cn: '毋庸置疑的，塔內的時間流速與外界並不相同……不，整個穗波市的時間都與外界不同。',
         en: '"No doubt about it, time in the tower flows differently from outside... no, all of Honami runs on a different time from the outside world."',
         who: 'Sumika\'s notes, after 160+ days inside the Honami Sonoro',
-        key: 'InfoDisplay_120101054',
+        key: 'InfoDisplay_120101054_Text',
         ver: '2.8',
       },
       {
@@ -159,7 +159,7 @@ export const SECTIONS = [
         cn: '好在這個索諾拉停滯了時間',
         en: '"Luckily, this Sonoro has stopped time." A few pages later: 既然在此處時間是可塑的黏土, "since time here is malleable clay".',
         who: 'Sumika\'s notes',
-        key: 'InfoDisplay_120101051 · 120101052',
+        key: 'InfoDisplay_120101051_Text · 120101052_Text',
         ver: '2.8',
       },
       {
@@ -167,7 +167,7 @@ export const SECTIONS = [
         cn: '孕育出了時空錯亂的索諾拉「幽靈之海」。在指定範圍內，使用坎特蕾拉給予的提燈即可在不同時空之間穿梭',
         en: '"...gave birth to the Sonoro \'Sea of Phantoms\', its space-time in disarray. Inside it, Cantarella\'s lantern lets you travel between different space-times."',
         who: 'Quest hint',
-        key: 'GuideTutorialPage_34138',
+        key: 'GuideTutorialPage_34138_Content',
         ver: '2.2',
       },
       {
@@ -241,7 +241,7 @@ export const SECTIONS = [
         cn: '在心之集域中，武器的外觀形制不過是表象，其概念的核心是用於戰鬥的工具。',
         en: '"In the Somnoire, a weapon\'s form is only an appearance. The core of its concept is a tool for battle."',
         who: 'Somnoire event weapon skins',
-        key: 'WeaponSkinConf_80080001',
+        key: 'WeaponSkinConf_80080001_BgDescription',
         ver: '1.4',
       },
     ],
@@ -302,7 +302,7 @@ export const SECTIONS = [
         cn: '層層夢境無窮無盡',
         en: '"Layer upon layer, the dreams run without end." 無窮 is the ordinary Chinese word for mathematical infinity, as in 無窮大.',
         who: 'Abyss of the Final Dreams',
-        key: 'InstanceDungeon_8914',
+        key: 'InstanceDungeon_8914_Description',
         ver: '3.6',
       },
       {
@@ -395,7 +395,7 @@ export const SECTIONS = [
         type: 'objection',
         q: '"但你已行至盡頭" means the layers end.',
         cn: '層層夢境無窮無盡，但你已行至盡頭',
-        key: 'InstanceDungeon_8914',
+        key: 'InstanceDungeon_8914_Description',
         a: 'The layers are the ones without end. "You have reached the end" is about the player\'s run through the stage. The official English says "you have reached the journey\'s end".',
       },
       {

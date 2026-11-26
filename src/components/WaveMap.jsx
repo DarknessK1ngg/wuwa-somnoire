@@ -4,11 +4,13 @@ import { WAVE } from '../content'
 import { usePack } from '../lang'
 import { profile } from '../mark'
 import { bus } from '../bus'
+import { INNER_UI } from '../characters'
 
 const SP = 520 // world distance between section spikes
 const ORDER = Object.entries(WAVE).sort((a, b) => a[1] - b[1]).map(([id]) => id)
+const GATE = (Math.max(...Object.values(WAVE)) + 1.25) * SP // the inner-layer spike
 const MIN = Math.min(...Object.values(WAVE)) * SP
-const MAX = Math.max(...Object.values(WAVE)) * SP
+const MAX = GATE
 
 function makeNodes() {
   return ORDER.map((id) => {
@@ -22,11 +24,12 @@ function makeNodes() {
       w: centre ? 70 : 52,
       boost: 1,
     }
-  })
+  }).concat([{ id: 'gate', gate: true, x: GATE, above: true, up: 240, down: 205, w: 66, boost: 1 }])
 }
 
-export default function WaveMap({ go }) {
+export default function WaveMap({ go, dive }) {
   const { SECTIONS, UI } = usePack()
+  const IU = INNER_UI[UI.lang]
   const byId = useMemo(() => Object.fromEntries(SECTIONS.map((x) => [x.id, x])), [SECTIONS])
   const wrap = useRef(), cv = useRef(), layer = useRef(), tilt = useRef(), view = useRef(), edgeL = useRef(), edgeR = useRef()
   const els = useRef({})
@@ -89,11 +92,11 @@ export default function WaveMap({ go }) {
       // Draw the Mark
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, W, H)
-      const scaled = nodes.map((n) => ({ ...n, up: n.up * k, down: n.down * k, w: n.w * Math.max(0.75, k) }))
+      const scaled = nodes.map((n) => ({ ...n, up: n.up * k * 1.12, down: n.down * k * 1.12, w: n.w * Math.max(0.75, k) * 1.12 }))
       const top = [], bot = []
       for (let sx = -4; sx <= W + 4; sx += 2) {
         const wx = sx + s.off - W / 2
-        const [u, d] = profile(wx, scaled, t, null, k)
+        const [u, d] = profile(wx, scaled, t, null, k * 1.45, 2.6 * Math.max(0.7, k))
         top.push(u)
         bot.push(d)
       }
@@ -111,7 +114,7 @@ export default function WaveMap({ go }) {
       if (motionOn() && s.parts.length < 140 && Math.random() < 0.6) {
         const sx = Math.random() * W
         const wx = sx + s.off - W / 2
-        const [u, d] = profile(wx, scaled, t, null, k)
+        const [u, d] = profile(wx, scaled, t, null, k * 1.45, 2.6 * Math.max(0.7, k))
         const upSide = Math.random() < 0.6
         s.parts.push({ wx, y: upSide ? -u : d, vy: (upSide ? -1 : 1) * (12 + Math.random() * 30), life: 0, max: 1.5 + Math.random() * 2.5, r: 0.6 + Math.random() * 1.6 })
       }
@@ -200,14 +203,39 @@ export default function WaveMap({ go }) {
         <div className="wave-tilt" ref={tilt}>
           <motion.canvas ref={cv} className="wave-cv" initial={{ scaleX: 0.02, opacity: 0 }} animate={{ scaleX: 1, opacity: 1 }} transition={{ duration: 1.1, ease: [0.2, 0.8, 0.1, 1] }} />
           <div className="wave-layer" ref={layer}>
-            {nodes.map((n, i) => {
+            {nodes.map((n) => {
+              if (n.gate) {
+                return (
+                  <button
+                    key="gate"
+                    ref={(el) => { els.current.gate = el }}
+                    className="wn wn-up wn-gate"
+                    style={{ left: n.x, '--amp': n.up * 1.12 }}
+                    onPointerEnter={() => { s.hover = 'gate' }}
+                    onPointerLeave={() => { if (s.hover === 'gate') s.hover = null }}
+                    onFocus={() => { s.hover = 'gate'; s.target = n.x }}
+                    onBlur={() => { if (s.hover === 'gate') s.hover = null }}
+                    onClick={(e) => dive(e.clientX || innerWidth / 2, e.clientY || innerHeight / 2, 'inner')}
+                    aria-label={`${IU.gate}: ${IU.gateShort}`}
+                  >
+                    <span className="wn-hit" />
+                    <span className="wn-ray" />
+                    <span className="gate-core" aria-hidden="true"><i /><i /><i /><b /></span>
+                    <span className="wn-tag">
+                      <span className="wn-num">{IU.gateNum}</span>
+                      <b>{IU.gate}</b>
+                      <small>{IU.gateShort}</small>
+                    </span>
+                  </button>
+                )
+              }
               const sec = byId[n.id]
               return (
                 <button
                   key={n.id}
                   ref={(el) => { els.current[n.id] = el }}
                   className={`wn ${n.above ? 'wn-up' : 'wn-down'} ${WAVE[n.id] === 0 ? 'wn-core' : ''}`}
-                  style={{ left: n.x, '--amp': n.above ? n.up : n.down }}
+                  style={{ left: n.x, '--amp': (n.above ? n.up : n.down) * 1.12 }}
                   onPointerEnter={() => { s.hover = n.id }}
                   onPointerLeave={() => { if (s.hover === n.id) s.hover = null }}
                   onFocus={() => { s.hover = n.id; s.target = n.x }}
@@ -217,6 +245,7 @@ export default function WaveMap({ go }) {
                 >
                   <span className="wn-hit" />
                   <span className="wn-ray" />
+                  <span className="spike-core" aria-hidden="true" />
                   <span className="wn-tag">
                     <span className="wn-num">{sec.num}</span>
                     <b>{WAVE[n.id] === 0 ? UI.map.core : sec.title}</b>
@@ -249,6 +278,13 @@ export default function WaveMap({ go }) {
               aria-label={`${UI.map.travel} ${byId[id].title}`}
             />
           ))}
+          <button
+            className="mini-dot mini-gate"
+            style={{ left: `${((GATE - (MIN - 600)) / span) * 100}%` }}
+            onClick={() => { s.target = GATE }}
+            title={IU.gate}
+            aria-label={`${UI.map.travel} ${IU.gate}`}
+          />
         </div>
       </footer>
     </motion.section>

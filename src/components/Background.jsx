@@ -6,6 +6,8 @@ const SHOTS = {
   intro: { cAzimuthAngle: 180, cPolarAngle: 90, cDistance: 3.4, uStrength: 3.4, uDensity: 1.3, rotationZ: 50 },
   map: { cAzimuthAngle: 210, cPolarAngle: 115, cDistance: 4.6, uStrength: 2.6, uDensity: 1.1, rotationZ: 20 },
   section: { cAzimuthAngle: 160, cPolarAngle: 75, cDistance: 5.6, uStrength: 2.2, uDensity: 0.9, rotationZ: 70 },
+  inner: { cAzimuthAngle: 250, cPolarAngle: 120, cDistance: 3.0, uStrength: 3.8, uDensity: 1.6, rotationZ: 110 },
+  char: { cAzimuthAngle: 140, cPolarAngle: 70, cDistance: 4.8, uStrength: 2.4, uDensity: 1.0, rotationZ: 30 },
 }
 
 export default function Background({ shot, s }) {
@@ -45,7 +47,7 @@ export default function Background({ shot, s }) {
         />
       </ShaderGradientCanvas>
       <Scenery shot={shot} s={s} />
-      <div className={`veil veil-${shot}`} />
+      <div className={`veil veil-${shot === 'inner' ? 'map' : shot === 'char' ? 'section' : shot}`} />
     </div>
   )
 }

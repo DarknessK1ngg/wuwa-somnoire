@@ -33,8 +33,8 @@ export function decor(i) {
 
 // Thickness above and below the baseline at world position wx.
 // nodes: [{x, up, down, w, boost}], env: optional envelope fn(wx) => 0..1, t: time (s)
-export function profile(wx, nodes, t = 0, env = null, decorScale = 1) {
-  let up = 1.1, down = 1.1
+export function profile(wx, nodes, t = 0, env = null, decorScale = 1, base = 1.1) {
+  let up = base, down = base
   const e = env ? env(wx) : 1
   const i0 = Math.floor((wx - 3 * STEP) / STEP), i1 = Math.ceil((wx + 3 * STEP) / STEP)
   for (let i = i0; i <= i1; i++) {

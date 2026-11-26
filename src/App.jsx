@@ -6,6 +6,10 @@ import WaveMap from './components/WaveMap'
 import Section from './components/Section'
 import Menu, { Burger } from './components/Menu'
 import Logo from './components/Logo'
+import InnerLayer from './components/InnerLayer'
+import CharacterView from './components/CharacterView'
+import Dive from './components/Dive'
+import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
 import { LangCtx, PACKS } from './lang'
 import { shockAt } from './bus'
@@ -13,7 +17,8 @@ import { useSettings } from './settings'
 
 const parse = () => {
   const h = decodeURIComponent(location.hash.slice(1))
-  if (h === 'map') return 'map'
+  if (h === 'map' || h === 'inner') return h
+  if (h.startsWith('c-') && CHARACTERS.some((c) => `c-${c.id}` === h)) return h
   if (SECTIONS.some((s) => s.id === h)) return h
   return 'intro'
 }
@@ -71,7 +76,17 @@ export default function App() {
     setTimeout(() => setReboot(0), 1400)
   }
 
-  const shot = view === 'intro' ? 'intro' : view === 'map' ? 'map' : 'section'
+  // Dive between layers: tunnel + decoding overlay, then the next view shows through.
+  const [diving, setDiving] = useState(null)
+  const dive = (x, y, to, short = false) => {
+    if (diving) return
+    shockAt(x, y)
+    setDiving({ x, y, k: Date.now(), short })
+    setTimeout(() => go(to), short ? 420 : 900)
+    setTimeout(() => setDiving(null), short ? 1300 : 2100)
+  }
+
+  const shot = view === 'intro' ? 'intro' : view === 'map' ? 'map' : view === 'inner' ? 'inner' : view.startsWith('c-') ? 'char' : 'section'
 
   return (
     <LangCtx.Provider value={pack}>
@@ -101,11 +116,14 @@ export default function App() {
       <main>
         <AnimatePresence mode="wait">
           {view === 'intro' && <Intro key={`intro-${site}`} onExplore={explore} />}
-          {view === 'map' && <WaveMap key="map" go={go} />}
-          {view !== 'intro' && view !== 'map' && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
+          {view === 'map' && <WaveMap key="map" go={go} dive={dive} />}
+          {view === 'inner' && <InnerLayer key={`inner-${site}`} open={(id, x, y) => dive(x, y, `c-${id}`, true)} surface={(x, y) => dive(x, y, 'map')} />}
+          {view.startsWith('c-') && <CharacterView key={`${site}-${view}`} id={view.slice(2)} back={(x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, 'inner', true)} openChar={(id, x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, `c-${id}`, true)} />}
+          {view !== 'intro' && view !== 'map' && view !== 'inner' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 
+      {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}
       {ripple && <Shockwave key={ripple.k} x={ripple.x} y={ripple.y} size={1.2} />}
 
       {view !== 'intro' && (
