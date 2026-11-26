@@ -45,8 +45,58 @@ export const SECTIONS = [
     ],
   },
   {
-    id: 'structure',
+    id: 'remnant',
     num: '02',
+    title: 'Remnant Energy',
+    short: 'What every Sonoro is made of',
+    group: 'The cosmology',
+    lead:
+      'Remnant energy is frequency energy in its pure, complete form. The information it records holds stable beyond time and space, and where it gathers densely, a Sonoro forms. For VSB that matters: a Sonoro is built from recorded information, the same kind of medium Reality-Fiction Transcendence deals in.',
+    blocks: [
+      { type: 'remnant' },
+      {
+        type: 'quote',
+        cn: '一種純淨，完整的頻率能量形態，其記錄的信息能夠超越時空以某種形式穩定存在。……其富集形成的超自然空間區域，學界稱之為索諾拉。',
+        en: '"A pure, complete form of frequency energy. The information it records can transcend time and space and exist in a stable form... The supernatural spatial region formed where it gathers is called a Sonoro by scholars."',
+        who: 'Loading screen: Remnant Energy',
+        key: 'LoadingTipsText_1012_TipsText',
+        ver: '1.0',
+      },
+      {
+        type: 'quote',
+        cn: '回音能量記錄著不同時空的事件',
+        en: '"Remnant energy records events from different times and spaces." The official English goes further: "from every dimension".',
+        who: 'Main story, Jinzhou',
+        key: 'Huanglong_main_1_6_54_4',
+        ver: '1.0',
+      },
+      {
+        type: 'quote',
+        cn: '曾在悲鳴中逝去的一部分穗波市市民，正以回音的形式「生活」於索諾拉中',
+        en: '"Some of the Honami citizens who died in the Lament now \'live\' inside the Sonoro in the form of Remnant." The people inside a Sonoro are made of it too.',
+        who: 'Glossary: Human Reverberations',
+        key: 'Term851065',
+        ver: '2.8',
+      },
+      {
+        type: 'quote',
+        cn: '黑海岸島鏈本身就是一塊巨大的、蘊含著高維回音能量的黑石',
+        en: '"The Black Shores archipelago is itself one giant Tacetite, holding higher-dimensional Remnant energy."',
+        who: 'Black Shores employee handbook',
+        key: 'AreaReportContent_Text19',
+        ver: '2.0',
+      },
+      {
+        type: 'rule',
+        title: 'What this means on the VSB scale',
+        text:
+          'A Sonoro is a region made of recorded information: Remnant energy held stable beyond time and space, with inhabitants made of the same thing. That is why a Sonoro can sit as fiction under the world that holds it, and why Sonoro stacked inside dreams form a hierarchy rather than a row of rooms.',
+      },
+    ],
+  },
+  {
+    id: 'structure',
+    num: '03',
     title: 'Structure',
     short: 'Doors, the Somnoire and what sits inside',
     group: 'The cosmology',
@@ -81,7 +131,7 @@ export const SECTIONS = [
   },
   {
     id: 'sonoro',
-    num: '03',
+    num: '04',
     title: 'Sonoro = Universe',
     short: 'Own space, own time, endless expansion',
     group: 'The cosmology',
@@ -140,7 +190,7 @@ export const SECTIONS = [
   },
   {
     id: 'fiction',
-    num: '04',
+    num: '05',
     title: 'Dreams = Fiction',
     short: 'Recorded, backed up, replayed',
     group: 'The cosmology',
@@ -198,7 +248,7 @@ export const SECTIONS = [
   },
   {
     id: 'recursion',
-    num: '05',
+    num: '06',
     title: 'Recursion',
     short: 'Layer under layer, without end',
     group: 'The hierarchy',
@@ -282,7 +332,7 @@ export const SECTIONS = [
   },
   {
     id: 'low1a',
-    num: '06',
+    num: '07',
     title: 'The Case for Low 1-A',
     short: 'Reality above the whole stack',
     group: 'The hierarchy',
@@ -318,7 +368,7 @@ export const SECTIONS = [
   },
   {
     id: 'terms',
-    num: '07',
+    num: '08',
     title: 'Terms',
     short: 'Every name you will meet here',
     group: 'Reference',
@@ -327,7 +377,7 @@ export const SECTIONS = [
   },
   {
     id: 'evidence',
-    num: '08',
+    num: '09',
     title: 'Evidence',
     short: 'All scans in one place',
     group: 'Reference',
@@ -336,7 +386,7 @@ export const SECTIONS = [
   },
   {
     id: 'objections',
-    num: '09',
+    num: '10',
     title: 'Objections',
     short: 'The usual pushback, answered',
     group: 'Reference',
@@ -367,7 +417,7 @@ export const SECTIONS = [
   },
   {
     id: 'sources',
-    num: '10',
+    num: '11',
     title: 'Sources',
     short: 'Check every line yourself',
     group: 'Reference',
@@ -406,17 +456,18 @@ export const GALLERY = [
   ['endless-dreams-cn', 'CN: 這裡，有無窮無盡的夢湧了進來'],
 ].map(([n, cap]) => ({ src: S(n), cap }))
 
-// Tree map layout (viewBox 1000 x 800)
-export const TREE = {
-  verdict: { x: 500, y: 70 },
-  rules: { x: 140, y: 330, parent: 'verdict' },
-  structure: { x: 380, y: 330, parent: 'verdict' },
-  recursion: { x: 620, y: 330, parent: 'verdict' },
-  terms: { x: 860, y: 330, parent: 'verdict' },
-  sources: { x: 90, y: 620, parent: 'rules' },
-  sonoro: { x: 265, y: 620, parent: 'structure' },
-  fiction: { x: 440, y: 620, parent: 'structure' },
-  low1a: { x: 615, y: 620, parent: 'recursion' },
-  objections: { x: 790, y: 620, parent: 'recursion' },
-  evidence: { x: 945, y: 620, parent: 'terms' },
+// Position of each section along the Mark (0 = centre spike)
+export const WAVE = {
+  sources: -5,
+  evidence: -4,
+  terms: -3,
+  objections: -2,
+  rules: -1,
+  verdict: 0,
+  remnant: 1,
+  structure: 2,
+  sonoro: 3,
+  fiction: 4,
+  recursion: 5,
+  low1a: 6,
 }

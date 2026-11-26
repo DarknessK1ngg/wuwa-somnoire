@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import Background from './components/Background'
-import Intro, { Ripple } from './components/Intro'
-import TreeMap from './components/TreeMap'
+import Intro, { Shockwave } from './components/Intro'
+import WaveMap from './components/WaveMap'
 import Section from './components/Section'
 import Menu, { Burger } from './components/Menu'
 import Logo from './components/Logo'
@@ -44,8 +44,8 @@ export default function App() {
 
   const explore = (x, y) => {
     setRipple({ x, y, k: Date.now() })
-    setTimeout(() => go('map'), 650)
-    setTimeout(() => setRipple(null), 1800)
+    setTimeout(() => go('map'), 700)
+    setTimeout(() => setRipple(null), 2200)
   }
 
   const shot = view === 'intro' ? 'intro' : view === 'map' ? 'map' : 'section'
@@ -77,12 +77,12 @@ export default function App() {
       <main>
         <AnimatePresence mode="wait">
           {view === 'intro' && <Intro key="intro" onExplore={explore} />}
-          {view === 'map' && <TreeMap key="map" go={go} />}
+          {view === 'map' && <WaveMap key="map" go={go} />}
           {view !== 'intro' && view !== 'map' && <Section key={view} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 
-      {ripple && <Ripple key={ripple.k} x={ripple.x} y={ripple.y} />}
+      {ripple && <Shockwave key={ripple.k} x={ripple.x} y={ripple.y} size={1.2} />}
 
       {view !== 'intro' && (
         <footer className="foot">

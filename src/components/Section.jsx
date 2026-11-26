@@ -192,6 +192,26 @@ function Sources() {
   )
 }
 
+
+function Remnant() {
+  const steps = [
+    { cls: 'orbit-freq', n: 4, t: 'Record', cn: '記錄', p: 'Remnant energy records events across space and time.' },
+    { cls: 'orbit-rem', n: 4, t: 'Remnant energy', cn: '回音能量', p: 'Pure, complete frequency energy whose information stays stable beyond space and time.' },
+    { cls: 'orbit-son', n: 0, t: 'Sonoro', cn: '索諾拉', p: 'Where it gathers densely, a supernatural region forms. Scholars call it Sonoro.' },
+  ]
+  return (
+    <motion.div className="flowr" {...reveal}>
+      {steps.map((s) => (
+        <div key={s.t} className="flowr-step">
+          <div className={`orbit ${s.cls}`}>{Array.from({ length: s.n }, (_, i) => <i key={i} />)}</div>
+          <b>{s.t} <span className="cn">{s.cn}</span></b>
+          <p>{s.p}</p>
+        </div>
+      ))}
+    </motion.div>
+  )
+}
+
 export default function Section({ id, go, settings }) {
   const idx = SECTIONS.findIndex((x) => x.id === id)
   const sec = SECTIONS[idx]
@@ -220,6 +240,7 @@ export default function Section({ id, go, settings }) {
             <p>{b.a}</p>
           </motion.div>
         )
+      case 'remnant': return <Remnant key={i} />
       case 'ladder': return <Ladder key={i} />
       case 'nest': return <Nest key={i} />
       case 'verdict': return <Verdict key={i} />
@@ -255,7 +276,7 @@ export default function Section({ id, go, settings }) {
         <h2 className="sec-title">
           {sec.title.split(' ').map((w, i) => (
             <motion.span key={i} initial={{ opacity: 0, y: '0.5em', filter: 'blur(10px)' }} animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }} transition={{ delay: 0.15 + i * 0.08, duration: 0.8, ease }}>
-              {w}{' '}
+              {w}
             </motion.span>
           ))}
         </h2>
