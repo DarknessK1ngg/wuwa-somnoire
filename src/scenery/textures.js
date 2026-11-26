@@ -163,6 +163,81 @@ function spire(ctx, r, x, y0, h, w, lean) {
   return { L, Rr, tip }
 }
 
+
+// A Tacet Field: a tall glowing rift in the ground, rimmed with dark thorns.
+function tacetField(ctx, gx, r, x, y0, h, w) {
+  const lensPath = (c, sc) => {
+    c.beginPath()
+    c.moveTo(x, y0 - h * sc)
+    c.quadraticCurveTo(x + w * 2 * sc, y0 - h * 0.45 * sc, x + w * 0.25, y0)
+    c.lineTo(x - w * 0.25, y0)
+    c.quadraticCurveTo(x - w * 2 * sc, y0 - h * 0.45 * sc, x, y0 - h * sc)
+    c.closePath()
+  }
+  // dark thorny shell
+  ctx.fillStyle = '#0b0910'
+  for (let i = 0; i < 26; i++) {
+    const t = i / 25
+    const yy = y0 - h * 1.06 * t
+    const half = w * 1.25 * Math.sin(Math.PI * Math.min(1, t * 1.05)) + 3
+    for (const side of [-1, 1]) {
+      const len = (10 + r() * 28) * (1 - t * 0.45)
+      ctx.beginPath()
+      ctx.moveTo(x + side * half * 0.6, yy + 5)
+      ctx.lineTo(x + side * (half + len), yy - 4 - r() * 8)
+      ctx.lineTo(x + side * half * 0.6, yy - 5)
+      ctx.closePath()
+      ctx.fill()
+    }
+  }
+  ctx.beginPath()
+  ctx.ellipse(x, y0 - h * 0.5, w * 1.35, h * 0.56, 0, 0, Math.PI * 2)
+  ctx.fill()
+  // golden interior, with grain lines
+  const g = ctx.createLinearGradient(x - w, 0, x + w, 0)
+  g.addColorStop(0, '#7a4208'); g.addColorStop(0.3, '#f2b04a'); g.addColorStop(0.5, '#ffe9b0'); g.addColorStop(0.7, '#f2b04a'); g.addColorStop(1, '#7a4208')
+  lensPath(ctx, 1); ctx.fillStyle = g; ctx.fill()
+  ctx.strokeStyle = 'rgba(110, 58, 6, 0.55)'
+  for (let i = 1; i < 6; i++) { ctx.lineWidth = 1.2; lensPath(ctx, 1 - i * 0.15); ctx.stroke() }
+  // glow
+  gx.save()
+  gx.shadowColor = 'rgba(255,255,255,1)'
+  gx.shadowBlur = 40
+  lensPath(gx, 0.85); gx.fillStyle = 'rgba(255,255,255,0.32)'; gx.fill()
+  gx.shadowBlur = 90
+  gx.fillStyle = 'rgba(255,255,255,0.14)'; gx.fill()
+  gx.restore()
+}
+
+// A dead, twisted tree.
+function deadTree(ctx, r, x, y, len, ang, wid, depth) {
+  if (depth === 0 || len < 4) return
+  const x2 = x + Math.cos(ang) * len, y2 = y + Math.sin(ang) * len
+  ctx.lineWidth = wid
+  ctx.lineCap = 'round'
+  ctx.beginPath()
+  ctx.moveTo(x, y)
+  ctx.quadraticCurveTo(x + Math.cos(ang + 0.4) * len * 0.5, y + Math.sin(ang + 0.4) * len * 0.5, x2, y2)
+  ctx.stroke()
+  const k = 2 + (r() > 0.6 ? 1 : 0)
+  for (let i = 0; i < k; i++) deadTree(ctx, r, x2, y2, len * (0.55 + r() * 0.25), ang + (r() - 0.5) * 1.4, wid * 0.62, depth - 1)
+}
+
+// Pale weathered boulders.
+function boulder(ctx, r, x, y, s) {
+  const k = 7
+  const pts = []
+  for (let i = 0; i < k; i++) {
+    const a = Math.PI + (i / (k - 1)) * Math.PI
+    pts.push([x + Math.cos(a) * s * (0.8 + r() * 0.4), y + Math.sin(a) * s * (0.55 + r() * 0.35)])
+  }
+  const g = ctx.createLinearGradient(x, y - s, x, y)
+  g.addColorStop(0, '#c9cbd6'); g.addColorStop(1, '#5d6070')
+  ctx.fillStyle = g
+  ctx.beginPath(); pts.forEach(([a, b], i) => (i ? ctx.lineTo(a, b) : ctx.moveTo(a, b))); ctx.closePath(); ctx.fill()
+  ctx.strokeStyle = 'rgba(30,30,40,0.5)'; ctx.lineWidth = 1; ctx.stroke()
+}
+
 // ---------- Far ridge: rows of hazy spires ----------
 function far() {
   const [c, ctx] = canvas()
@@ -183,6 +258,10 @@ function far() {
   }
   ctx.fillStyle = '#0e0c15'
   ctx.fillRect(0, base, TW, TH - base)
+  for (const fx of [0.18, 0.63]) {
+    const seed = Math.floor(fx * 1e6)
+    wrap(fx * TW, 120, (xx) => tacetField(ctx, gx, rng(seed), xx, base + 2, 120 + fx * 60, 16 + fx * 8))
+  }
   const fog = ctx.createLinearGradient(0, base - 160, 0, TH)
   fog.addColorStop(0, 'rgba(150,145,170,0)'); fog.addColorStop(0.45, 'rgba(150,145,170,0.16)'); fog.addColorStop(1, 'rgba(70,66,90,0.4)')
   ctx.globalCompositeOperation = 'source-atop'
@@ -269,6 +348,18 @@ function near() {
   gg.addColorStop(0, '#07060c'); gg.addColorStop(1, '#010102')
   ctx.fillStyle = gg
   ctx.fillRect(0, base - 2, TW, TH - base + 2)
+  // dead trees and pale boulders on the plain
+  ctx.strokeStyle = '#08070c'
+  for (const fx of [0.09, 0.34, 0.52, 0.8]) {
+    const seed = Math.floor(fx * 1e6) + 7
+    wrap(fx * TW, 260, (xx) => deadTree(ctx, rng(seed), xx, base, 70 + fx * 40, -Math.PI / 2 + (fx - 0.5) * 0.5, 9, 6))
+  }
+  for (let i = 0; i < 18; i++) {
+    const x = r() * TW, sz = 12 + r() * 34, seed = Math.floor(r() * 1e9), by = base + 4 + r() * 4
+    wrap(x, sz * 2, (xx) => boulder(ctx, rng(seed), xx, by, sz))
+  }
+  // one near Tacet Field
+  wrap(TW * 0.72, 200, (xx) => tacetField(ctx, gx, rng(99), xx, base + 4, 240, 30))
   // ground faults of light
   for (let i = 0; i < 7; i++) {
     const x = r() * TW, len = 80 + r() * 200

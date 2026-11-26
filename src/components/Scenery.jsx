@@ -145,14 +145,14 @@ void main() {
   glow += threads(p + warp * 0.9, 0.75) * 0.55 * (0.8 + 0.2 * sin(uTime * 2.0));
   // warm light pooling at the ground line
   glow += smoothstep(-0.25, -0.5, p.y) * 0.12 * pulse;
-  vec3 aura = uAura * glow * 1.35 + vec3(1.0) * pow(glow, 3.0) * 0.35;
+  vec3 aura = uAura * glow * 1.35 + vec3(1.0, 0.95, 0.85) * pow(min(glow, 1.0), 3.0) * 0.22;
   col += aura; a = max(a, min(1.0, glow * 0.85));
 
   // Twinkling stars in the open sky, behind everything else
-  vec2 sg = (p / uZoom + vec2((uPan + uShot.x) * 0.02, 0.0)) * 90.0;
-  vec2 sc = floor(sg);
-  float sr = hash(sc + 41.0);
-  float star = step(0.985, sr) * smoothstep(0.35, 0.0, length(fract(sg) - 0.5)) * (0.5 + 0.5 * sin(uTime * (1.5 + sr * 4.0) + sr * 50.0));
+  vec2 stG = (p / uZoom + vec2((uPan + uShot.x) * 0.02, 0.0)) * 90.0;
+  vec2 stC = floor(stG);
+  float stR = hash(stC + 41.0);
+  float star = step(0.985, stR) * smoothstep(0.35, 0.0, length(fract(stG) - 0.5)) * (0.5 + 0.5 * sin(uTime * (1.5 + stR * 4.0) + stR * 50.0));
   star *= smoothstep(-0.05, 0.3, p.y) * (1.0 - fa.a) * (1.0 - m.a) * (1.0 - n.a);
   col += vec3(0.95, 0.95, 1.0) * star * 0.9; a = max(a, star * 0.9);
 
