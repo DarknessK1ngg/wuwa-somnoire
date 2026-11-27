@@ -1,3 +1,4 @@
+import { DISCORD } from './DiscordLink'
 import MarkEdge from './MarkEdge'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -81,6 +82,11 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                         <span className="menu-short">{c.title[UI.lang]}</span>
                       </motion.button>
                     ))}
+                    <motion.a variants={item} className="menu-link menu-dc" href={DISCORD} target="_blank" rel="noopener noreferrer">
+                      <span className="menu-num">↗</span>
+                      <span className="menu-title">Discord</span>
+                      <span className="menu-short">{UI.lang === 'ru' ? 'Сервер · ВСБ, АЦФ и лор' : 'Server · VSB, ACF and lore'}</span>
+                    </motion.a>
                   </div>
                 </motion.div>
               ) : (

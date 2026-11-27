@@ -10,6 +10,7 @@ import Logo from './components/Logo'
 import InnerLayer from './components/InnerLayer'
 import CharacterView from './components/CharacterView'
 import Dive from './components/Dive'
+import DiscordLink from './components/DiscordLink'
 import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
 import { LangCtx, PACKS } from './lang'
@@ -109,7 +110,10 @@ export default function App() {
             </motion.button>
           )}
         </AnimatePresence>
-        <Burger open={menu} onClick={() => setMenu((m) => !m)} />
+        <div className="top-right">
+          <DiscordLink />
+          <Burger open={menu} onClick={() => setMenu((m) => !m)} />
+        </div>
       </header>
 
       <Menu open={menu} view={view} go={go} settings={settings} switchSite={switchSite} />

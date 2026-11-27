@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from 'motion/react'
 import { CHARACTERS, INNER_UI } from '../characters'
 import { usePack } from '../lang'
 import MarkEdge, { MarkBadge, MarkRule } from './MarkEdge'
+import Signature from './Signature'
 
 const ease = [0.2, 0.75, 0.1, 1]
 const GL = '01ABCDEF夢境層索諾拉回音頻率虛質'
@@ -75,6 +76,7 @@ export default function CharacterView({ id, back, openChar }) {
   const [tab, setTab] = useState('lore')
   const [art, setArt] = useState(0)
   const tilt = useRef()
+  const imgRef = useRef()
 
   useEffect(() => { setTab('lore'); setArt(0) }, [id])
 
@@ -105,6 +107,7 @@ export default function CharacterView({ id, back, openChar }) {
               <span className="char-rings" aria-hidden="true"><i /><i /><i /></span>
               <AnimatePresence mode="wait">
                 <motion.img
+                  ref={imgRef}
                   key={ch.art[art]}
                   src={ch.art[art]}
                   alt={ch.name[lang]}
@@ -115,6 +118,7 @@ export default function CharacterView({ id, back, openChar }) {
                   transition={{ duration: 0.6, ease }}
                 />
               </AnimatePresence>
+              <Signature id={ch.id} imgRef={imgRef} run={ch.art[art]} />
               <span className="char-scan" aria-hidden="true" />
             </div>
             <div className="char-thumbs">

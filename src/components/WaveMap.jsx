@@ -154,11 +154,16 @@ function MarkScene({ st, nodes, k, u }) {
   const { camera, size } = useThree()
   useFrame((_, dt) => {
     const s = st.current
-    camera.position.x = s.off
-    camera.position.y = size.height * 0.05
+    // plunge: the camera falls into the opened seam at the core
+    if (s.plunging) s.plunge = Math.min(1, s.plunge + dt / 0.95)
+    const pe = s.plunge * s.plunge * s.plunge
+    camera.position.x = THREE.MathUtils.lerp(s.off, 0, Math.min(1, s.plunge * 1.6))
+    camera.position.y = size.height * 0.05 * (1 - Math.min(1, s.plunge * 1.6))
+    camera.zoom = 1 + pe * 9
+    camera.updateProjectionMatrix()
     u.uTime.value += Math.min(dt, 0.05)
     u.uRad.value = (60 + size.width * 0.95) * s.openE
-    u.uGap.value = (16 + 44 * k) * s.openE
+    u.uGap.value = (16 + 44 * k) * s.openE * (1 + pe * 2.5)
   })
   return (
     <>
@@ -180,7 +185,7 @@ export default function WaveMap({ go, dive }) {
   const wrap = useRef(), layer = useRef(), view = useRef(), edgeL = useRef(), edgeR = useRef()
   const els = useRef({})
   const nodes = useMemo(makeNodes, [])
-  const st = useRef({ open: 0, openE: 0, force: false, off: 0, mx: null, my: null, drag: null, target: null, hover: null, touch: false, W: 0, H: 0, k: 1 })
+  const st = useRef({ plunge: 0, plunging: false, open: 0, openE: 0, force: false, off: 0, mx: null, my: null, drag: null, target: null, hover: null, touch: false, W: 0, H: 0, k: 1 })
   const [touch, setTouch] = useState(false)
   const [k, setK] = useState(1)
   const u = useMemo(() => ({
@@ -260,10 +265,15 @@ export default function WaveMap({ go, dive }) {
   const enterRift = (e) => {
     const r = e.currentTarget.parentElement.querySelector('.rift-core').getBoundingClientRect()
     const x = r.left + r.width / 2, y = r.top + r.height / 2
-    if (s.open > 0.7) { dive(x, y, 'inner'); return }
+    const fall = () => {
+      s.plunging = true
+      wrap.current?.classList.add('plunging')
+      setTimeout(() => dive(x, y, 'inner'), 420)
+    }
+    if (s.open > 0.7) { fall(); return }
     s.force = true
     s.target = 0
-    setTimeout(() => dive(x, y, 'inner'), 800)
+    setTimeout(fall, 700)
   }
   const handlers = {
     onPointerMove: (e) => {

@@ -1,5 +1,9 @@
-import { useMemo, useState } from 'react'
+import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
+import { Canvas, useFrame, useThree } from '@react-three/fiber'
+import { Environment, Sparkles } from '@react-three/drei'
+import * as THREE from 'three'
+import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { CHARACTERS, INNER_UI } from '../characters'
 import { usePack } from '../lang'
 import { profile } from '../mark'
@@ -26,6 +30,79 @@ function innerMark() {
   return `M${top.join('L')}L${bot.reverse().join('L')}Z`
 }
 
+// Same Mark, as lofted chrome. World units = viewBox units, origin at the stage centre.
+function innerGeometry() {
+  const nodes = LAYOUT.map((l) => ({ x: l.x - 600, up: l.up, down: l.down, w: 34 }))
+  const env = (x) => Math.exp(-Math.pow(x / 520, 4))
+  const M = 22, pos = [], idx = []
+  let n = 0
+  for (let x = -600; x <= 600; x += 3, n++) {
+    const [u, d] = profile(x, nodes, 0, env, 0.55, 1.4)
+    const ry = (u + d) / 2, cy = (u - d) / 2
+    const rz = 1.4 + 0.3 * Math.pow(ry, 0.85)
+    for (let j = 0; j < M; j++) {
+      const th = (j / M) * Math.PI * 2, c = Math.cos(th)
+      pos.push(x, cy + ry * Math.sin(th), rz * Math.sign(c) * Math.pow(Math.abs(c), 1.3))
+    }
+  }
+  for (let i = 0; i < n - 1; i++) {
+    for (let j = 0; j < M; j++) {
+      const a0 = i * M + j, a1 = i * M + ((j + 1) % M), b0 = a0 + M, b1 = a1 + M
+      idx.push(a0, b0, a1, a1, b0, b1)
+    }
+  }
+  const g = new THREE.BufferGeometry()
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
+  g.setIndex(idx)
+  g.computeVertexNormals()
+  return g
+}
+
+function InnerScene({ hover }) {
+  const geo = useMemo(innerGeometry, [])
+  const { camera, size } = useThree()
+  const g = useRef(), key = useRef()
+  useFrame((st, dt) => {
+    const k = Math.min(1, dt * 2.4)
+    camera.zoom = size.width / W
+    camera.updateProjectionMatrix()
+    const t = st.clock.elapsedTime
+    const m = g.current
+    m.scale.x = THREE.MathUtils.lerp(m.scale.x, 1, Math.min(1, dt * 1.8))
+    m.rotation.x = THREE.MathUtils.lerp(m.rotation.x, Math.sin(t * 0.35) * 0.1 - st.pointer.y * 0.12, k)
+    m.rotation.y = THREE.MathUtils.lerp(m.rotation.y, st.pointer.x * 0.05, k)
+    const i = CHARACTERS.findIndex((c) => c.id === hover.current)
+    const tx = i >= 0 ? LAYOUT[i].x - 600 : st.pointer.x * 600
+    key.current.position.x = THREE.MathUtils.lerp(key.current.position.x, tx, k)
+    key.current.intensity = THREE.MathUtils.lerp(key.current.intensity, i >= 0 ? 520000 : 260000, k)
+  })
+  return (
+    <>
+      <Suspense fallback={null}><Environment files={studio} environmentIntensity={1} /></Suspense>
+      <directionalLight position={[200, 500, 400]} intensity={2} color="#e8ecff" />
+      <pointLight ref={key} position={[0, 160, 240]} intensity={260000} color="#fff2dc" />
+      <group ref={g} position={[0, H / 2 - MY, 0]} scale={[0.001, 1, 1]}>
+        <mesh geometry={geo}>
+          <meshPhysicalMaterial color="#e4e4ee" metalness={1} roughness={0.07} iridescence={1} iridescenceIOR={1.7}
+            iridescenceThicknessRange={[180, 920]} clearcoat={1} clearcoatRoughness={0.06} envMapIntensity={1.5} />
+        </mesh>
+      </group>
+      <Sparkles count={90} scale={[W, 300, 60]} position={[0, H / 2 - MY, 0]} size={2} speed={0.2} opacity={0.4} color="#d6dcf6" noise={20} />
+    </>
+  )
+}
+
+function useWide() {
+  const q = '(min-width: 761px)'
+  const [wide, setWide] = useState(() => matchMedia(q).matches)
+  useEffect(() => {
+    const m = matchMedia(q), f = () => setWide(m.matches)
+    m.addEventListener('change', f)
+    return () => m.removeEventListener('change', f)
+  }, [])
+  return wide
+}
+
 function branch(l) {
   const [cx, cy] = l.card
   if (l.side === 'b') {
@@ -44,6 +121,9 @@ export default function InnerLayer({ open, surface }) {
   const IU = INNER_UI[lang]
   const mark = useMemo(innerMark, [])
   const [hover, setHover] = useState(null)
+  const hoverRef = useRef(null)
+  hoverRef.current = hover
+  const wide = useWide()
 
   return (
     <motion.section
@@ -58,7 +138,13 @@ export default function InnerLayer({ open, surface }) {
         <h2>{IU.title}</h2>
       </header>
 
-      <div className="inner-stage">
+      <div className={`inner-stage ${wide ? 'has-gl' : ''}`}>
+        {wide && (
+          <Canvas className="inner-gl" orthographic resize={{ offsetSize: true }} dpr={[1, 1.75]} camera={{ zoom: 1, position: [0, 0, 600], near: 1, far: 2000 }}
+            gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <InnerScene hover={hoverRef} />
+          </Canvas>
+        )}
         <svg className="inner-svg" viewBox={`0 0 ${W} ${H}`} aria-hidden="true">
           <defs>
             <filter id="innerglow" x="-20%" y="-50%" width="140%" height="200%">
