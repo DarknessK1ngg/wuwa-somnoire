@@ -8,13 +8,18 @@ import { motion } from 'motion/react'
 import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { markOutline } from '../mark'
 import { usePack } from '../lang'
-import { bus } from '../bus'
+import { bus, moodLerp } from '../bus'
 import { Fog } from './FogSky'
 
 const ease = [0.2, 0.75, 0.1, 1]
 
 // ---------- The Mark as an iridescent chrome sculpture ----------
+// Drag-to-spin state for the hero Mark: an offset on top of the idle motion, pulled back by a spring.
+const spin = { rx: 0, ry: 0, vx: 0, vy: 0, drag: false }
+
 function MarkSculpture({ prog, intro, hand }) {
+  const mat = useRef()
+  const base = useRef({ x: 0, y: 0 })
   const group = useRef()
   // Lofted blade: every slice along the Mark is a lens-shaped cross-section, so the
   // surface curves everywhere and the chrome catches real reflections.
@@ -57,8 +62,20 @@ function MarkSculpture({ prog, intro, hand }) {
     const k = intro.current
     // rise out of the fog on load, then follow the cursor and descend with the scroll
     g.position.y = THREE.MathUtils.lerp(-2.2, 0.05, k) + Math.sin(t * 0.6) * 0.04 - p * 0.3
-    g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, st.pointer.x * 0.4 + Math.sin(t * 0.25) * 0.22 + p * 0.5, Math.min(1, dt * 2.5))
-    g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, -st.pointer.y * 0.25 + 0.05, Math.min(1, dt * 2.5))
+    moodLerp(mat.current?.color, 'chrome', Math.min(1, dt * 3))
+    const b = base.current
+    b.y = THREE.MathUtils.lerp(b.y, (spin.drag ? 0 : st.pointer.x * 0.4) + Math.sin(t * 0.25) * 0.22 + p * 0.5, Math.min(1, dt * 2.5))
+    b.x = THREE.MathUtils.lerp(b.x, (spin.drag ? 0 : -st.pointer.y * 0.25) + 0.05, Math.min(1, dt * 2.5))
+    if (!spin.drag) {
+      // damped spring back to rest, with a little overshoot so it rings like metal
+      const d = Math.min(dt, 0.033)
+      spin.vy += (-14 * spin.ry - 2.2 * spin.vy) * d
+      spin.vx += (-18 * spin.rx - 3.0 * spin.vx) * d
+      spin.ry += spin.vy * d
+      spin.rx += spin.vx * d
+    }
+    g.rotation.y = b.y + spin.ry
+    g.rotation.x = b.x + spin.rx
     const fit = Math.min(1, (st.size.width / st.size.height) / 1.25)
     const free = (0.82 + k * 0.18) * (1 + p * 0.25) * (0.45 + 0.55 * fit)
     const h = hand.current
@@ -69,6 +86,7 @@ function MarkSculpture({ prog, intro, hand }) {
       const ppu = st.size.height / (2 * c.position.z * Math.tan((c.fov * Math.PI) / 360))
       const tScale = 150 / ppu
       const tY = -(st.size.height * 0.05 - 35) / ppu
+      spin.rx *= 0.9; spin.ry *= 0.9
       g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, 0, e)
       g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, 0, e)
       g.position.y = THREE.MathUtils.lerp(g.position.y, tY, e)
@@ -81,6 +99,7 @@ function MarkSculpture({ prog, intro, hand }) {
     <group ref={group}>
       <mesh geometry={geo}>
         <meshPhysicalMaterial
+          ref={mat}
           color="#e4e4ee"
           metalness={1}
           roughness={0.06}
@@ -172,6 +191,7 @@ export default function Hero({ onExplore, settings }) {
     if (leaving.current) return
     leaving.current = true
     setHanding(true)
+    bus.sfx('whoosh')
     // the Mark flattens and settles, then the map takes over from the same spot
     const t0 = performance.now()
     const step = (now) => {
@@ -202,11 +222,42 @@ export default function Hero({ onExplore, settings }) {
     const onTs = (e) => { ty = e.touches[0].clientY }
     const onTm = (e) => { if (ty == null) return; const y = e.touches[0].clientY; bump((ty - y) * 0.0025); ty = y }
     const onKey = (e) => { if (['ArrowDown', 'PageDown', ' '].includes(e.key)) bump(0.12); if (['ArrowUp', 'PageUp'].includes(e.key)) bump(-0.12) }
+    // grab the Mark and spin it
+    let grab = null
+    const onDown = (e) => {
+      if (leaving.current || !e.target.closest('.hero') || e.target.closest('button, a, .topbar, input')) return
+      grab = { x: e.clientX, y: e.clientY, t: performance.now() }
+      spin.drag = true
+      spin.vx = spin.vy = 0
+      document.body.classList.add('grabbing')
+    }
+    const onMove = (e) => {
+      if (!grab) return
+      const now = performance.now(), dt = Math.max(8, now - grab.t) / 1000
+      const dx = (e.clientX - grab.x) * 0.009, dy = (e.clientY - grab.y) * 0.006
+      spin.ry += dx
+      spin.rx = Math.max(-1.1, Math.min(1.1, spin.rx + dy))
+      spin.vy = dx / dt
+      spin.vx = dy / dt
+      grab = { x: e.clientX, y: e.clientY, t: now }
+    }
+    const onUp = () => {
+      if (!grab) return
+      grab = null
+      spin.drag = false
+      document.body.classList.remove('grabbing')
+      const sp = Math.min(1, (Math.abs(spin.vy) + Math.abs(spin.vx)) / 12)
+      bus.sfx('ring', 0.3 + sp * 0.7)
+    }
+    addEventListener('pointerdown', onDown)
+    addEventListener('pointermove', onMove, { passive: true })
+    addEventListener('pointerup', onUp)
+    addEventListener('pointercancel', onUp)
     addEventListener('wheel', onWheel, { passive: true })
     addEventListener('touchstart', onTs, { passive: true })
     addEventListener('touchmove', onTm, { passive: true })
     addEventListener('keydown', onKey)
-    return () => { cancelAnimationFrame(raf); removeEventListener('wheel', onWheel); removeEventListener('touchstart', onTs); removeEventListener('touchmove', onTm); removeEventListener('keydown', onKey) }
+    return () => { spin.drag = false; document.body.classList.remove('grabbing'); removeEventListener('pointerdown', onDown); removeEventListener('pointermove', onMove); removeEventListener('pointerup', onUp); removeEventListener('pointercancel', onUp); cancelAnimationFrame(raf); removeEventListener('wheel', onWheel); removeEventListener('touchstart', onTs); removeEventListener('touchmove', onTm); removeEventListener('keydown', onKey) }
   }, [])
 
   const [w1, w2] = H.title
@@ -215,7 +266,7 @@ export default function Hero({ onExplore, settings }) {
       <div className="hero-canvas">
         <Canvas dpr={low ? 1 : [1, 1.75]} camera={{ fov: 32, position: [0, 0, 7.2], near: 0.1, far: 50 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
           <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setLow(true)} flipflops={2} />
-          <Scene prog={prog} intro={intro} hand={hand} tint={s.c2} aura={s.aura || '#ffc870'} motionOn={motionOn} low={low} />
+          <Scene prog={prog} intro={intro} hand={hand} tint={s.fog || s.c2} aura={s.seam || s.aura || '#ffc870'} motionOn={motionOn} low={low} />
         </Canvas>
       </div>
       <motion.div className="hero-black" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 1.8, ease: 'easeOut' }} />

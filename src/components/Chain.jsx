@@ -55,6 +55,7 @@ export default function Chain({ go }) {
         <p>{C.result[1]}</p>
         <div className="chain-actions">
           <button className="hero-enter" onClick={copy}>{copied ? C.copied : C.copy}</button>
+          <button className="crumb" onClick={() => go('descent')}>{UI.lang === 'ru' ? 'Провалиться сквозь слои ↓' : 'Fall through the layers ↓'}</button>
           <button className="crumb" onClick={() => go('verdict')}>{SECTIONS.find((x) => x.id === 'verdict')?.title} →</button>
         </div>
       </motion.footer>

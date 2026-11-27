@@ -17,7 +17,7 @@ function World({ shot, s }) {
   })
   return (
     <>
-      <Fog front={false} prog={prog} tint={s.c2} aura={s.aura || '#ffc870'} pan={pan} />
+      <Fog front={false} prog={prog} tint={s.fog || s.c2} aura={s.seam || s.aura || '#ffc870'} pan={pan} />
       <Sparkles count={70} scale={[12, 7, 4]} size={1.4} speed={s.motion ? 0.2 : 0} opacity={0.35} color="#d6dcf6" />
     </>
   )

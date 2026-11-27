@@ -57,6 +57,9 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                   <motion.button variants={item} className={`menu-home ${view === 'chain' ? 'on' : ''}`} onClick={() => go('chain')}>
                     <span>⟶</span> {PROOF_UI[UI.lang].chain.menu}
                   </motion.button>
+                  <motion.button variants={item} className={`menu-home ${view === 'descent' ? 'on' : ''}`} onClick={() => go('descent')}>
+                    <span>↓</span> {UI.lang === 'ru' ? 'Спуск сквозь сны' : 'The descent'}
+                  </motion.button>
                   {groups.map((g) => (
                     <div key={g} className="menu-group">
                       <motion.p variants={item} className="menu-group-name">{g}</motion.p>
@@ -111,7 +114,7 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                   <motion.div variants={item} className="swatches">
                     {Object.entries(PRESETS).map(([id, p]) => (
                       <button key={id} className={`swatch ${s.preset === id ? 'on' : ''}`} onClick={() => applyPreset(id)}>
-                        <span className="swatch-dot" style={{ background: `conic-gradient(from 200deg, ${p.c1}, ${p.c2}, ${p.c3}, ${p.c1})` }} />
+                        <span className="swatch-dot" style={{ background: `radial-gradient(circle at 35% 30%, #fff, ${p.chrome} 38%, ${p.fog} 75%, #030306), linear-gradient(${p.seam}, ${p.seam})`, boxShadow: `inset 0 -3px 0 ${p.seam}` }} />
                         {p.name}
                       </button>
                     ))}
@@ -119,7 +122,7 @@ export default function Menu({ open, view, go, settings, switchSite }) {
 
                   <motion.p variants={item} className="menu-group-name">{M.own}</motion.p>
                   <motion.div variants={item} className="pickers">
-                    {['c1', 'c2', 'c3', 'accent', 'aura'].map((k) => [k, M.pickers[k]]).map(([k, label]) => (
+                    {['chrome', 'seam', 'fog'].map((k) => [k, M.pickers[k]]).map(([k, label]) => (
                       <label key={k} className="picker">
                         <input type="color" value={s[k] || '#ffc870'} onChange={(e) => update({ [k]: e.target.value, preset: 'custom' })} />
                         <span>{label}</span>

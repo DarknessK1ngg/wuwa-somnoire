@@ -533,7 +533,7 @@ export const UI = {
   },
   menu: {
     explore: 'Разделы', customize: 'Настройки', map: 'Карта', mode: 'Режим',
-    palette: 'Палитра', own: 'Свои цвета', pickers: { c1: 'Волна', c2: 'Сияние', c3: 'Глубина', accent: 'Акцент', aura: 'Аура' },
+    palette: 'Настроение', own: 'Свои цвета', pickers: { chrome: 'Хром', seam: 'Свет щели', fog: 'Туман' },
     panels: 'Панели', dark: 'тёмные', light: 'светлые', comfort: 'Удобство', text: 'Размер текста',
     anim: 'Анимации', grain: 'Зерно плёнки', reset: 'Сбросить настройки', open: 'Открыть меню', close: 'Закрыть меню',
   },

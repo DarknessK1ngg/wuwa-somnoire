@@ -7,7 +7,7 @@ import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { WAVE } from '../content'
 import { usePack } from '../lang'
 import { profile } from '../mark'
-import { bus } from '../bus'
+import { moodLerp, bus } from '../bus'
 import { INNER_UI } from '../characters'
 
 const SP = 520 // world distance between section spikes
@@ -88,6 +88,7 @@ function Half({ geo, dir, u }) {
     }
     return m
   }, [dir, u])
+  useFrame((_, dt) => moodLerp(mat.color, 'chrome', Math.min(1, dt * 3)))
   return <mesh geometry={geo} material={mat} frustumCulled={false} />
 }
 
@@ -130,7 +131,7 @@ function Seam({ u }) {
   )
 }
 
-function CursorLight({ st }) {
+function CursorLight({ st, u }) {
   const l = useRef(), l2 = useRef()
   const { size } = useThree()
   useFrame(() => {
@@ -139,6 +140,8 @@ function CursorLight({ st }) {
     const mx = s.mx ?? size.width / 2, my = s.my ?? size.height * 0.4
     l.current.position.set(s.off + (mx - size.width / 2), -(my - size.height * 0.55), 120)
     l2.current.intensity = 400000 * s.openE
+    moodLerp(l2.current.color, 'seam', 0.05)
+    moodLerp(u.uAura.value, 'seam', 0.05)
   })
   return (
     <>
@@ -168,6 +171,7 @@ function Motes({ st }) {
     const s = st.current
     const p = s.plunge
     mat.current.opacity = Math.min(1, p * 3) * (1 - Math.max(0, p - 0.85) / 0.15)
+    moodLerp(mat.current.color, 'seam', 0.1)
     if (!p) return
     const a = geo.attributes.position.array
     const pull = 1 - Math.pow(1 - p, 2.2)
@@ -210,7 +214,7 @@ function MarkScene({ st, nodes, k, u }) {
       <Seam u={u} />
       <Half geo={top} dir={1} u={u} />
       <Half geo={bot} dir={-1} u={u} />
-      <CursorLight st={st} />
+      <CursorLight st={st} u={u} />
       <Motes st={st} />
       <Sparkles count={260} scale={[X1 - X0, 520, 80]} size={2.2} speed={0.25} opacity={0.45} color="#d6dcf6" noise={30} />
     </>
@@ -314,6 +318,7 @@ export default function WaveMap({ go, dive }) {
     const x = r.left + r.width / 2, y = r.top + r.height / 2
     const fall = () => {
       s.plunging = true
+      bus.sfx('plunge')
       wrap.current?.classList.add('plunging')
       setTimeout(() => dive(x, y, 'inner'), 420)
     }
@@ -363,7 +368,7 @@ export default function WaveMap({ go, dive }) {
                 <div key={n.id} ref={(el) => { els.current[n.id] = el }} className="wn wn-up wn-core wn-rift" style={{ left: n.x, '--amp': n.up * 1.12 }}>
                   <button
                     className="wn-hit rift-hit"
-                    onPointerEnter={() => { s.hover = 'rift' }}
+                    onPointerEnter={() => { s.hover = 'rift'; bus.sfx('open') }}
                     onPointerLeave={() => { if (s.hover === 'rift') s.hover = null }}
                     onFocus={() => { s.hover = 'rift'; s.target = 0 }}
                     onBlur={() => { if (s.hover === 'rift') s.hover = null }}
@@ -386,7 +391,7 @@ export default function WaveMap({ go, dive }) {
                 ref={(el) => { els.current[n.id] = el }}
                 className={`wn ${n.above ? 'wn-up' : 'wn-down'}`}
                 style={{ left: n.x, '--amp': (n.above ? n.up : n.down) * 1.12 }}
-                onPointerEnter={() => { s.hover = n.id }}
+                onPointerEnter={() => { s.hover = n.id; bus.sfx('tick') }}
                 onPointerLeave={() => { if (s.hover === n.id) s.hover = null }}
                 onFocus={() => { s.hover = n.id; s.target = n.x }}
                 onBlur={() => { if (s.hover === n.id) s.hover = null }}

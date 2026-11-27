@@ -478,7 +478,7 @@ export const UI = {
   },
   menu: {
     explore: 'Explore', customize: 'Customize', map: 'The map', mode: 'Mode',
-    palette: 'Palette', own: 'Your own colors', pickers: { c1: 'Wave', c2: 'Glow', c3: 'Depth', accent: 'Accent', aura: 'Aura' },
+    palette: 'Mood', own: 'Your own colors', pickers: { chrome: 'Chrome', seam: 'Seam light', fog: 'Fog' },
     panels: 'Panels', dark: 'dark', light: 'light', comfort: 'Comfort', text: 'Text size',
     anim: 'Animations', grain: 'Film grain', reset: 'Reset to default', open: 'Open menu', close: 'Close menu',
   },

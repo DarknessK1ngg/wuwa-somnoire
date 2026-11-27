@@ -4,6 +4,7 @@ import { Canvas, useFrame, useThree } from '@react-three/fiber'
 import { Environment, PerformanceMonitor, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import studio from '@pmndrs/assets/hdri/studio.exr.js'
+import { moodLerp } from '../bus'
 import { CHARACTERS, INNER_UI } from '../characters'
 import { usePack } from '../lang'
 import { profile } from '../mark'
@@ -61,9 +62,10 @@ function innerGeometry() {
 function InnerScene({ hover }) {
   const geo = useMemo(innerGeometry, [])
   const { camera, size } = useThree()
-  const g = useRef(), key = useRef()
+  const g = useRef(), key = useRef(), mat = useRef()
   useFrame((st, dt) => {
     const k = Math.min(1, dt * 2.4)
+    moodLerp(mat.current?.color, 'chrome', k)
     camera.zoom = size.width / W
     camera.updateProjectionMatrix()
     const t = st.clock.elapsedTime
@@ -83,7 +85,7 @@ function InnerScene({ hover }) {
       <pointLight ref={key} position={[0, 160, 240]} intensity={260000} color="#fff2dc" />
       <group ref={g} position={[0, H / 2 - MY, 0]} scale={[0.001, 1, 1]}>
         <mesh geometry={geo}>
-          <meshPhysicalMaterial color="#e4e4ee" metalness={1} roughness={0.07} iridescence={1} iridescenceIOR={1.7}
+          <meshPhysicalMaterial ref={mat} color="#e4e4ee" metalness={1} roughness={0.07} iridescence={1} iridescenceIOR={1.7}
             iridescenceThicknessRange={[180, 920]} clearcoat={1} clearcoatRoughness={0.06} envMapIntensity={1.5} />
         </mesh>
       </group>

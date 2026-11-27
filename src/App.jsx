@@ -12,15 +12,19 @@ import Dive from './components/Dive'
 import DiscordLink from './components/DiscordLink'
 import Search, { SearchButton } from './components/Search'
 import Chain from './components/Chain'
+import Descent from './components/Descent'
+import Stars from './components/Stars'
+import Trail from './components/Trail'
+import { setSound } from './sound'
 import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
 import { LangCtx, PACKS } from './lang'
-import { shockAt } from './bus'
+import { bus, shockAt } from './bus'
 import { useSettings } from './settings'
 
 const parse = () => {
   const h = decodeURIComponent(location.hash.slice(1))
-  if (h === 'map' || h === 'inner' || h === 'chain') return h
+  if (h === 'map' || h === 'inner' || h === 'chain' || h === 'descent') return h
   if (h.startsWith('c-') && CHARACTERS.some((c) => `c-${c.id}` === h)) return h
   if (SECTIONS.some((s) => s.id === h)) return h
   return 'intro'
@@ -38,6 +42,13 @@ export default function App() {
   }, [])
 
   const [search, setSearch] = useState(false)
+  // sound must start from a click, so a saved "on" waits for the first interaction
+  useEffect(() => {
+    if (!settings.s.sound) { setSound(false); return }
+    const start = () => setSound(true)
+    if (navigator.userActivation?.hasBeenActive) start()
+    else { addEventListener('pointerdown', start, { once: true }); return () => removeEventListener('pointerdown', start) }
+  }, [settings.s.sound])
   useEffect(() => {
     const onKey = (e) => {
       if (e.key === 'Escape') setMenu(false)
@@ -85,6 +96,8 @@ export default function App() {
   const dive = (x, y, to, short = false) => {
     if (diving) return
     shockAt(x, y)
+    if (short) bus.sfx('iris')
+    else if (view !== 'map') bus.sfx('whoosh')
     setDiving({ x, y, k: Date.now(), short })
     setTimeout(() => go(to), short ? 420 : 900)
     setTimeout(() => setDiving(null), short ? 1300 : 2100)
@@ -113,7 +126,11 @@ export default function App() {
           )}
         </AnimatePresence>
         <div className="top-right">
-          <SearchButton onClick={() => { setMenu(false); setSearch(true) }} />
+          <button className={`snd-btn ${settings.s.sound ? 'on' : ''}`} onClick={() => settings.update({ sound: !settings.s.sound })}
+            aria-label={settings.s.sound ? 'Sound off' : 'Sound on'} aria-pressed={!!settings.s.sound}>
+            <span className="snd-bars" aria-hidden="true"><i /><i /><i /><i /></span>
+          </button>
+          <SearchButton onClick={() => { setMenu(false); setSearch(true); bus.sfx('tick') }} />
           <DiscordLink />
           <Burger open={menu} onClick={() => setMenu((m) => !m)} />
         </div>
@@ -128,10 +145,13 @@ export default function App() {
           {view === 'inner' && <InnerLayer key={`inner-${site}`} open={(id, x, y) => dive(x, y, `c-${id}`, true)} surface={(x, y) => dive(x, y, 'map')} />}
           {view.startsWith('c-') && <CharacterView key={`${site}-${view}`} id={view.slice(2)} back={(x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, 'inner', true)} openChar={(id, x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, `c-${id}`, true)} />}
           {view === 'chain' && <Chain key={`chain-${site}`} go={go} />}
-          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
+          {view === 'descent' && <Descent key={`descent-${site}`} go={go} />}
+          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && view !== 'descent' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 
+      <Stars on={settings.s.motion} />
+      {view.startsWith('c-') && <Trail key={view} id={view.slice(2)} />}
       <AnimatePresence>{search && <Search key="search" close={() => setSearch(false)} go={go} />}</AnimatePresence>
       {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}
 
