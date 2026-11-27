@@ -333,11 +333,11 @@ export const SECTIONS = [
   {
     id: 'low1a',
     num: '07',
-    title: 'The Case for Low 1-A',
-    short: 'Reality above the whole stack',
+    title: 'Low 1-A',
+    short: 'Waking reality transcends the whole dream hierarchy',
     group: 'The hierarchy',
     lead:
-      'Low 1-A needs something above the hierarchy as a whole, not just on its top step. Every layer, however deep, sits in one medium. For the waking world all of it is the same thing: recorded dreams, populated by Illusia that do not truly exist.',
+      "The dream hierarchy is endless, and every step of it is already High 1‑B on its own: below any layer lies an endless chain of dreams within dreams. Waking reality does not extend this ladder by one more step. It stands above all of it at once. To reality every layer, from the first to the infinite, is recorded fiction. The difference is not one of size but of existence itself. That is transcendence, and it gives Low 1‑A.",
     blocks: [
       {
         type: 'figs',
@@ -345,9 +345,46 @@ export const SECTIONS = [
       },
       {
         type: 'rule',
-        title: 'Why this is not just one more step',
+        title: "Every step is already High 1‑B",
+        text:
+          "The layers never end, and leaving one dream only takes you into another. So below any step lies an infinite recursion of full worlds, each one fiction to the layer above it. Every step is the top of its own infinite hierarchy, so the ladder is High 1‑B at any height.",
+      },
+      {
+        type: 'quote',
+        big: true,
+        cn: '層層夢境無窮無盡',
+        en: "\"Layer upon layer, the dreams run without end.\" 無窮 is the ordinary Chinese word for mathematical infinity, as in 無窮大.",
+        who: 'Abyss of the Final Dreams',
+        key: 'InstanceDungeon_8914_Description',
+        ver: '3.6',
+      },
+      {
+        type: 'quote',
+        cn: '你以為離開了夢境，卻發現自己進入了另一個夢境中',
+        en: "\"You thought you had left the dream, only to find yourself in another one.\"",
+        who: 'Event summary',
+        key: 'Event_AYKXBRZM_58_6',
+        ver: '1.4',
+      },
+      {
+        type: 'rule',
+        title: 'Reality is not one more step',
         text:
           'People in the waking world are not on the ladder at all. Only an Illusia of them goes in. The relationship between reality and the Somnoire is the same for layer one and layer one thousand: stored record versus the thing that stores it.',
+      },
+      {
+        type: 'quote',
+        cn: '你理解成一個正在做夢的人就行了，但是，她並不真實存在，只是門制造出的虛影。',
+        en: "\"Just think of her as someone dreaming. But she doesn't truly exist. She's only an Illusia made by the Gate.\" 虛影 means an empty, insubstantial shadow.",
+        who: 'Ebony Gatekeeper',
+        key: 'Guide_YXQJCZ_7_11',
+        ver: '1.4',
+      },
+      {
+        type: 'rule',
+        title: "Verdict: Low 1‑A",
+        text:
+          "An infinite hierarchy of steps that are each High 1‑B stays, as a whole, fiction to the waking world. No number of added steps reaches reality: the gap between them is not quantitative but existential. That is transcendence over the hierarchy. The waking world and the people in it are Low 1‑A.",
       },
       {
         type: 'rule',
@@ -466,7 +503,7 @@ export const UI = {
   lang: 'en',
   title: 'Somnoire Dossier · Wuthering Waves',
   brand: ['Somnoire', 'Dossier'],
-  hero: { title: ['WUTHERING', 'WAVES'], kicker: 'The Somnoire Dossier', note: ['Every dream on Solaris,', 'kept in one place.'], tier: 'High 1-B · VS Battles', built: 'Every line from the game files', scroll: 'Scroll to descend', enter: 'Enter', depth: 'Descent' },
+  hero: { title: ['WUTHERING', 'WAVES'], kicker: 'The Somnoire Dossier', note: ['Every dream on Solaris,', 'kept in one place.'], tier: 'High 1-B · Low 1-A · VS Battles', built: 'Every line from the game files', scroll: 'Scroll to descend', enter: 'Enter', depth: 'Descent' },
   intro: { sub: ['VS Battles', 'the Somnoire dossier'], tiers: ['High 1-B', 'Low 1-A'], explore: 'Explore', foot: 'Every line quoted from the game files, in the original Chinese' },
   map: {
     core: 'The Core', coreShort: 'Verdict: where it all lands',
@@ -504,14 +541,14 @@ export const UI = {
   nestCore: 'without end',
   verdict: [
     ['High 1-B', 'The dream hierarchy', 'Countably infinite layers. Each one a full universe and recorded fiction for the layer above.', 'yes'],
-    ['Low 1-A', 'Waking reality', 'Above the whole hierarchy at once. Every layer is stored dream data to it.', 'case'],
+    ['Low 1-A', 'Waking reality', 'Above the whole hierarchy at once: every layer is recorded fiction to it. The gap is existential — section 07.', 'yes'],
     ['1-A', 'Not claimed', 'Would need a line showing reality itself as fiction to something higher.', 'no'],
   ],
   steps: [
     ['sonoro', 'A Sonoro is a universe', 'Its own space, its own time, and it unfolds without limit.'],
     ['fiction', 'Dreams are fiction', 'The Somnoire records, backs up and replays them. Their people "do not truly exist".'],
     ['recursion', 'The layers never end', 'Dreamers inside dreams make new Sonoro. 層層夢境無窮無盡.'],
-    ['low1a', 'Reality sits above it all', 'One medium holds every layer. To the waking world it is all record.'],
+    ['low1a', 'Reality sits above it all', 'Every step is already High 1-B, and the waking world transcends all of them. Low 1-A.'],
   ],
   remnant: [
     ['Record', '記錄', 'Remnant energy records events across space and time.'],
