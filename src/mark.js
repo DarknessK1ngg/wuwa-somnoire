@@ -97,3 +97,25 @@ export function edgePath(seed = 1, spikes = 3, amp = 16) {
 
 // A single vertical spike (lens) for number badges. viewBox 0 0 40 100.
 export const SPIKE = 'M20,0 C21.5,30 26,44 34,50 C26,56 21.5,70 20,100 C18.5,70 14,56 6,50 C14,44 18.5,30 20,0 Z'
+
+// Outline of a finite Mark as [x, y] points (y up), for building 3D geometry.
+export function markOutline(half = 600, step = 4, base = 5) {
+  const env = (x) => Math.exp(-Math.pow(x / (half * 0.55), 2))
+  const nodes = [
+    { x: 0, up: 230, down: 160, w: 50 },
+    { x: -120, up: 80, down: 46, w: 28 },
+    { x: 150, up: 70, down: 86, w: 30 },
+    { x: -260, up: 44, down: 60, w: 24 },
+    { x: 290, up: 52, down: 24, w: 22 },
+    { x: 410, up: 22, down: 30, w: 18 },
+    { x: -400, up: 26, down: 18, w: 18 },
+  ]
+  const top = [], bot = []
+  for (let x = -half; x <= half; x += step) {
+    const fade = Math.min(1, (half - Math.abs(x)) / 40)
+    const [u, d] = profile(x, nodes, 0, env, 1.2, base)
+    top.push([x, Math.max(0.6, u * fade)])
+    bot.push([x, -Math.max(0.6, d * fade)])
+  }
+  return [...top, ...bot.reverse()]
+}

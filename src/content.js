@@ -466,6 +466,7 @@ export const UI = {
   lang: 'en',
   title: 'Somnoire Dossier · Wuthering Waves',
   brand: ['Somnoire', 'Dossier'],
+  hero: { title: ['WUTHERING', 'WAVES'], kicker: 'The Somnoire Dossier', note: ['Every dream on Solaris,', 'kept in one place.'], tier: 'High 1-B · VS Battles', built: 'Every line from the game files', scroll: 'Scroll to descend', enter: 'Enter', depth: 'Descent' },
   intro: { sub: ['VS Battles', 'the Somnoire dossier'], tiers: ['High 1-B', 'Low 1-A'], explore: 'Explore', foot: 'Every line quoted from the game files, in the original Chinese' },
   map: {
     core: 'The Core', coreShort: 'Verdict: where it all lands',

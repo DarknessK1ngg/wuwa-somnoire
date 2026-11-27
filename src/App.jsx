@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import Background from './components/Background'
-import Intro, { Shockwave } from './components/Intro'
+import { Shockwave } from './components/Intro'
+import Hero from './components/Hero'
 import WaveMap from './components/WaveMap'
 import Section from './components/Section'
 import Menu, { Burger } from './components/Menu'
@@ -116,7 +117,7 @@ export default function App() {
 
       <main>
         <AnimatePresence mode="wait">
-          {view === 'intro' && <Intro key={`intro-${site}`} onExplore={explore} />}
+          {view === 'intro' && <Hero key={`intro-${site}`} onExplore={explore} settings={settings} />}
           {view === 'map' && <WaveMap key="map" go={go} dive={dive} />}
           {view === 'inner' && <InnerLayer key={`inner-${site}`} open={(id, x, y) => dive(x, y, `c-${id}`, true)} surface={(x, y) => dive(x, y, 'map')} />}
           {view.startsWith('c-') && <CharacterView key={`${site}-${view}`} id={view.slice(2)} back={(x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, 'inner', true)} openChar={(id, x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, `c-${id}`, true)} />}
