@@ -378,6 +378,7 @@ export default function WaveMap({ go, dive }) {
                   <span className="rift-core" aria-hidden="true" />
                   <button className="wn-tag wn-tag-btn" onClick={() => go(n.id)} aria-label={`${sec.title}: ${sec.short}`}>
                     <span className="wn-num">{sec.num}</span>
+                    <i className="wn-coord">x 0000 · ↕ {Math.round(n.up)}</i>
                     <b>{UI.map.core}</b>
                     <small>{UI.map.coreShort}</small>
                     <em className="rift-hint">{UI.map.coreHint}</em>
@@ -402,6 +403,7 @@ export default function WaveMap({ go, dive }) {
                 <span className="wn-ray" />
                 <span className="wn-tag">
                   <span className="wn-num">{sec.num}</span>
+                  <i className="wn-coord">x {n.x < 0 ? '−' : '+'}{String(Math.abs(Math.round(n.x))).padStart(4, '0')} · {n.above ? '↑' : '↓'} {Math.round(n.above ? n.up : n.down)}</i>
                   <b>{sec.title}</b>
                   <small>{sec.short}</small>
                 </span>

@@ -15,6 +15,7 @@ import Chain from './components/Chain'
 import Descent from './components/Descent'
 import Stars from './components/Stars'
 import Trail from './components/Trail'
+import Cursor from './components/Cursor'
 import { setSound } from './sound'
 import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
@@ -151,6 +152,7 @@ export default function App() {
       </main>
 
       <Stars on={settings.s.motion} />
+      <Cursor />
       {view.startsWith('c-') && <Trail key={view} id={view.slice(2)} />}
       <AnimatePresence>{search && <Search key="search" close={() => setSearch(false)} go={go} />}</AnimatePresence>
       {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}

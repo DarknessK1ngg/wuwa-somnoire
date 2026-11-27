@@ -1,8 +1,47 @@
 import MarkEdge, { MarkBadge, MarkRule } from './MarkEdge'
-import { lazy, Suspense, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { usePack } from '../lang'
 import { SCANS, PROOF_UI } from '../proofs'
+import { createPortal } from 'react-dom'
+import { Sculpture, Wordmark } from './Chrome3D'
+
+// Each section's word on the margin (game terms where the section is about one) and its chrome piece.
+const MARGIN = {
+  verdict: '無窮無盡', rules: '規則', remnant: '頻率', structure: '心之集域', sonoro: '索諾拉', fiction: '虛影',
+  recursion: '層層夢境', low1a: '待續', terms: '名詞', evidence: '證據', objections: '反駁', sources: '出處',
+}
+const PIECE = {
+  verdict: 'nested', rules: 'shard', remnant: 'orb', structure: 'door', sonoro: 'rings', fiction: 'mirror',
+  recursion: 'nested', low1a: 'void', terms: 'shard', evidence: 'mirror', objections: 'shard', sources: 'rings',
+}
+
+// Things that sit on the page frame: the vertical margin word and the dossier running foot.
+function Frame({ sec, word }) {
+  const [st, setSt] = useState({ y: 0, page: 1, pages: 1 })
+  useEffect(() => {
+    let raf
+    const tick = () => {
+      const H = document.documentElement.scrollHeight
+      const pages = Math.max(1, Math.round(H / innerHeight))
+      const page = Math.min(pages, Math.floor((scrollY + innerHeight * 0.5) / innerHeight) + 1)
+      setSt((v) => (v.y === scrollY && v.page === page && v.pages === pages ? v : { y: scrollY, page, pages }))
+      raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [])
+  return createPortal(
+    <>
+      {word && <div className="margin-word" lang="zh-Hant" aria-hidden="true" style={{ transform: `translateY(${-st.y * 0.12}px)` }}>{word}</div>}
+      <div className="folio" aria-hidden="true">
+        <span>Somnoire Dossier · N° {sec.num} · {sec.title}</span>
+        <span>p. {String(st.page).padStart(2, '0')} / {String(st.pages).padStart(2, '0')}</span>
+      </div>
+    </>,
+    document.body,
+  )
+}
 
 const Corridor = lazy(() => import('./Corridor'))
 const ease = [0.2, 0.75, 0.1, 1]
@@ -55,9 +94,11 @@ function Figs({ items, open }) {
     <div className={`figs figs-${Math.min(items.length, 2)}`}>
       {items.map((f, i) => (
         <motion.figure key={f.src} className="fig" {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}>
-          <button onClick={() => open(f)} aria-label={UI.sec.open}>
-            <motion.img layoutId={f.src} src={f.src} alt={f.cap} loading="lazy" />
-          </button>
+          <span className="crop">
+            <button onClick={() => open(f)} aria-label={UI.sec.open}>
+              <motion.img layoutId={f.src} src={f.src} alt={f.cap} loading="lazy" />
+            </button>
+          </span>
           <figcaption>{f.cap}</figcaption>
         </motion.figure>
       ))}
@@ -258,7 +299,9 @@ export default function Section({ id, go, settings }) {
       exit={{ opacity: 0, y: -40, filter: 'blur(10px)' }}
       transition={{ duration: 0.7, ease }}
     >
+      <Frame sec={sec} word={MARGIN[sec.id]} />
       <header className="sec-head">
+        <Sculpture type={PIECE[sec.id]} className="sec-sculpt" />
         <button className="crumb" onClick={() => go('map')}>{UI.sec.map}</button>
         <span className="sec-group">{sec.group}</span>
         <motion.span className="sec-num" initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>{sec.num}</motion.span>
@@ -279,6 +322,8 @@ export default function Section({ id, go, settings }) {
         {prev ? <button onClick={() => go(prev.id)}><MarkEdge seed={51} /><small>{UI.sec.prev}</small>{prev.title}</button> : <span />}
         {next ? <button className="next" onClick={() => go(next.id)}><MarkEdge seed={52} /><small>{UI.sec.next}</small>{next.title}</button> : <button className="next" onClick={() => go('map')}><MarkEdge seed={53} /><small>{UI.sec.done}</small>{UI.sec.back}</button>}
       </nav>
+
+      <Wordmark />
 
       <AnimatePresence>
         {box && (
