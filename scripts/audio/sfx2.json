@@ -1,0 +1,11 @@
+{ "format": "webm,mp3", "lufs": -18,
+  "sounds": [
+    { "name": "tick",   "sound": "hover/tone", "voice": "crotales" },
+    { "name": "search", "sound": "next/step", "voice": "celesta" },
+    { "name": "ring",   "want": "one note struck and ringing", "voice": "singing_bowl", "pitch": "D4" },
+    { "name": "open",   "sound": "heal/glow", "voice": "wine_glass" },
+    { "name": "iris",   "sound": "dash/air" },
+    { "name": "catch",  "sound": "gem/sparkle", "voice": "crotales" },
+    { "name": "layer",  "want": "one note struck and ringing", "voice": "tubular_bell", "pitch": "D4" },
+    { "name": "swell",  "want": "a slow deep swell", "voice": "sub_swell", "pitch": "D2" }
+  ] }

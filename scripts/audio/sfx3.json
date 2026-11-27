@@ -1,0 +1,6 @@
+{ "format": "webm,mp3", "lufs": -18,
+  "sounds": [
+    { "name": "ring",  "sound": "note/singing_bowl", "pitch": "D4" },
+    { "name": "layer", "sound": "note/tubular_bell", "pitch": "D4" },
+    { "name": "hand",  "sound": "braam/swell" }
+  ] }

@@ -1,0 +1,6 @@
+Sound on this site
+------------------
+All effects and the ambient bed were rendered with earshot (https://github.com/Leonxlnx/earshot, MIT licence).
+earshot's learned sounds are rebuilt from public-domain recordings; its output is free to use.
+The ambient loop was arranged for this site from earshot renders (drone, air pads, glass pad, singing bowls,
+felt piano notes, wind) and mixed in code.

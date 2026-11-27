@@ -9,6 +9,7 @@ import { usePack } from '../lang'
 import { findQuote } from '../proofs'
 import { profile } from '../mark'
 import { bus, moodLerp } from '../bus'
+import { setDepthTone } from '../sound'
 
 // The descent: scroll and the camera falls through Mark after Mark. Each Mark is one layer of dream;
 // it splits along its axis as you reach it and you pass through the seam into the next.
@@ -152,12 +153,12 @@ export default function Descent({ go }) {
       const want = p * (Q + 1.6)
       depth.current += (want - depth.current) * 0.08
       const L = Math.floor(depth.current + 0.15)
-      if (L !== lastLayer.current) { if (L > lastLayer.current && L > 0) bus.sfx('layer', L); lastLayer.current = L }
+      if (L !== lastLayer.current) { if (L > lastLayer.current && L > 0) bus.sfx('layer', L); lastLayer.current = L; setDepthTone(L) }
       setD((v) => (Math.abs(v - depth.current) > 0.004 ? depth.current : v))
       raf = requestAnimationFrame(tick)
     }
     raf = requestAnimationFrame(tick)
-    return () => cancelAnimationFrame(raf)
+    return () => { cancelAnimationFrame(raf); setDepthTone(0) }
   }, [Q])
 
   // caption opacity: a layer's line shows while you are passing through it

@@ -131,7 +131,7 @@ export default function App() {
             aria-label={settings.s.sound ? 'Sound off' : 'Sound on'} aria-pressed={!!settings.s.sound}>
             <span className="snd-bars" aria-hidden="true"><i /><i /><i /><i /></span>
           </button>
-          <SearchButton onClick={() => { setMenu(false); setSearch(true); bus.sfx('tick') }} />
+          <SearchButton onClick={() => { setMenu(false); setSearch(true); bus.sfx('search') }} />
           <DiscordLink />
           <Burger open={menu} onClick={() => setMenu((m) => !m)} />
         </div>

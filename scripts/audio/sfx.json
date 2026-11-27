@@ -1,0 +1,15 @@
+{ "format": "webm,mp3", "lufs": -18,
+  "sounds": [
+    { "name": "tick",    "sound": "hover/tone" },
+    { "name": "search",  "sound": "next/step" },
+    { "name": "ring",    "sound": "gong/hit", "dur": 3.5, "axes": { "size": -0.6, "bright": 0.3 } },
+    { "name": "open",    "sound": "heal/glow" },
+    { "name": "riser",   "sound": "riser/tone" },
+    { "name": "whoosh",  "sound": "whoosh/low" },
+    { "name": "iris",    "sound": "whoosh/airy" },
+    { "name": "suck",    "sound": "teleport/out" },
+    { "name": "boom",    "sound": "bass_drum/orchestral" },
+    { "name": "catch",   "sound": "gem/sparkle" },
+    { "name": "layer",   "sound": "checkpoint/chime" },
+    { "name": "shimmer", "sound": "shine/sweep" }
+  ] }
