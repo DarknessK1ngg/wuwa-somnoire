@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Float, Sparkles } from '@react-three/drei'
+import { Environment, Float, PerformanceMonitor, Sparkles } from '@react-three/drei'
 import { EffectComposer, Bloom, Noise, Vignette, ChromaticAberration } from '@react-three/postprocessing'
 import { BlendFunction } from 'postprocessing'
 import * as THREE from 'three'
@@ -8,13 +8,13 @@ import { motion } from 'motion/react'
 import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { markOutline } from '../mark'
 import { usePack } from '../lang'
-import { shockAt } from '../bus'
+import { bus } from '../bus'
 import { Fog } from './FogSky'
 
 const ease = [0.2, 0.75, 0.1, 1]
 
 // ---------- The Mark as an iridescent chrome sculpture ----------
-function MarkSculpture({ prog, intro }) {
+function MarkSculpture({ prog, intro, hand }) {
   const group = useRef()
   // Lofted blade: every slice along the Mark is a lens-shaped cross-section, so the
   // surface curves everywhere and the chrome catches real reflections.
@@ -46,6 +46,7 @@ function MarkSculpture({ prog, intro }) {
     g.setIndex(idx)
     g.computeVertexNormals()
     g.center()
+    g.computeBoundingBox()
     return g
   }, [])
   useFrame((st, dt) => {
@@ -59,7 +60,22 @@ function MarkSculpture({ prog, intro }) {
     g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, st.pointer.x * 0.4 + Math.sin(t * 0.25) * 0.22 + p * 0.5, Math.min(1, dt * 2.5))
     g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, -st.pointer.y * 0.25 + 0.05, Math.min(1, dt * 2.5))
     const fit = Math.min(1, (st.size.width / st.size.height) / 1.25)
-    g.scale.setScalar((0.82 + k * 0.18) * (1 + p * 0.25) * (0.45 + 0.55 * fit))
+    const free = (0.82 + k * 0.18) * (1 + p * 0.25) * (0.45 + 0.55 * fit)
+    const h = hand.current
+    if (h > 0) {
+      // hand-off: turn flat and settle exactly where the map's Mark sits (1 mark px = 1 screen px)
+      const e = h * h * (3 - 2 * h)
+      const c = st.camera
+      const ppu = st.size.height / (2 * c.position.z * Math.tan((c.fov * Math.PI) / 360))
+      const tScale = 150 / ppu
+      const tY = -(st.size.height * 0.05 - 35) / ppu
+      g.rotation.y = THREE.MathUtils.lerp(g.rotation.y, 0, e)
+      g.rotation.x = THREE.MathUtils.lerp(g.rotation.x, 0, e)
+      g.position.y = THREE.MathUtils.lerp(g.position.y, tY, e)
+      g.scale.setScalar(THREE.MathUtils.lerp(free, tScale, e))
+      return
+    }
+    g.scale.setScalar(free)
   })
   return (
     <group ref={group}>
@@ -80,19 +96,21 @@ function MarkSculpture({ prog, intro }) {
   )
 }
 
-function Rig({ prog }) {
+function Rig({ prog, hand }) {
   useFrame((st, dt) => {
     const c = st.camera
-    const z = 7.2 - prog.current * 2.4
-    c.position.x = THREE.MathUtils.lerp(c.position.x, st.pointer.x * 0.35, Math.min(1, dt * 2))
-    c.position.y = THREE.MathUtils.lerp(c.position.y, st.pointer.y * 0.2, Math.min(1, dt * 2))
-    c.position.z = THREE.MathUtils.lerp(c.position.z, z, Math.min(1, dt * 3))
+    const h = hand.current > 0
+    const z = h ? 7.2 : 7.2 - prog.current * 2.4
+    const k = Math.min(1, dt * (h ? 5 : 2))
+    c.position.x = THREE.MathUtils.lerp(c.position.x, h ? 0 : st.pointer.x * 0.35, k)
+    c.position.y = THREE.MathUtils.lerp(c.position.y, h ? 0 : st.pointer.y * 0.2, k)
+    c.position.z = THREE.MathUtils.lerp(c.position.z, z, Math.min(1, dt * (h ? 6 : 3)))
     c.lookAt(0, 0, 0)
   })
   return null
 }
 
-function Scene({ prog, intro, tint, aura, motionOn }) {
+function Scene({ prog, intro, hand, tint, aura, motionOn, low }) {
   return (
     <>
       <Fog front={false} prog={prog} tint={tint} aura={aura} />
@@ -102,17 +120,17 @@ function Scene({ prog, intro, tint, aura, motionOn }) {
       <directionalLight position={[3, 4, 2]} intensity={2.2} color="#e8ecff" />
       <pointLight position={[-3, -1, 2]} intensity={6} color={aura} distance={8} />
       <Float speed={motionOn ? 1.2 : 0} rotationIntensity={0.15} floatIntensity={0.3}>
-        <MarkSculpture prog={prog} intro={intro} />
+        <MarkSculpture prog={prog} intro={intro} hand={hand} />
       </Float>
       <Sparkles count={90} scale={[9, 5, 5]} size={1.6} speed={motionOn ? 0.25 : 0} opacity={0.5} color="#d8defa" />
       <Fog front prog={prog} tint={tint} aura={aura} />
-      <Rig prog={prog} />
-      <EffectComposer multisampling={0}>
+      <Rig prog={prog} hand={hand} />
+      {!low && <EffectComposer multisampling={0}>
         <Bloom intensity={0.6} luminanceThreshold={0.82} luminanceSmoothing={0.2} mipmapBlur />
         <ChromaticAberration offset={[0.0007, 0.0005]} radialModulation modulationOffset={0.35} blendFunction={BlendFunction.NORMAL} />
         <Noise opacity={0.07} premultiply blendFunction={BlendFunction.SCREEN} />
         <Vignette eskil={false} offset={0.22} darkness={0.85} />
-      </EffectComposer>
+      </EffectComposer>}
     </>
   )
 }
@@ -142,14 +160,26 @@ export default function Hero({ onExplore, settings }) {
   const intro = useRef(0)
   const [pct, setPct] = useState(0)
   const leaving = useRef(false)
+  const hand = useRef(0)
+  // weak GPU: drop resolution and post-processing instead of stuttering
+  const [low, setLow] = useState(false)
+  const [born] = useState(() => performance.now())
+  const [handing, setHanding] = useState(false)
   const s = settings.s
   const motionOn = s.motion
 
   const go = (x = innerWidth / 2, y = innerHeight / 2) => {
     if (leaving.current) return
     leaving.current = true
-    shockAt(x, y)
-    onExplore(x, y)
+    setHanding(true)
+    // the Mark flattens and settles, then the map takes over from the same spot
+    const t0 = performance.now()
+    const step = (now) => {
+      hand.current = Math.min(1, (now - t0) / 1100)
+      if (hand.current < 1) requestAnimationFrame(step)
+      else { bus.fromHero = true; onExplore(x, y) }
+    }
+    requestAnimationFrame(step)
   }
 
   useEffect(() => {
@@ -181,10 +211,11 @@ export default function Hero({ onExplore, settings }) {
 
   const [w1, w2] = H.title
   return (
-    <motion.section className="hero" exit={{ opacity: 0, filter: 'blur(14px)', scale: 1.04 }} transition={{ duration: 0.8, ease }}>
+    <motion.section className={`hero ${handing ? 'hero-handing' : ''}`} exit={{ opacity: 0 }} transition={{ duration: 0.4, ease: 'easeOut' }}>
       <div className="hero-canvas">
-        <Canvas dpr={[1, 1.75]} camera={{ fov: 32, position: [0, 0, 7.2], near: 0.1, far: 50 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
-          <Scene prog={prog} intro={intro} tint={s.c2} aura={s.aura || '#ffc870'} motionOn={motionOn} />
+        <Canvas dpr={low ? 1 : [1, 1.75]} camera={{ fov: 32, position: [0, 0, 7.2], near: 0.1, far: 50 }} gl={{ antialias: true, powerPreference: 'high-performance' }}>
+          <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setLow(true)} flipflops={2} />
+          <Scene prog={prog} intro={intro} hand={hand} tint={s.c2} aura={s.aura || '#ffc870'} motionOn={motionOn} low={low} />
         </Canvas>
       </div>
       <motion.div className="hero-black" initial={{ opacity: 1 }} animate={{ opacity: 0 }} transition={{ duration: 1.8, ease: 'easeOut' }} />

@@ -53,7 +53,7 @@ const reveal = {
 
 function Q({ q, lang, UI }) {
   return (
-    <motion.figure className="quote cq" {...reveal}>
+    <motion.figure className="quote cq" data-key={q.key} {...reveal}>
       <MarkEdge seed={q.key.length + 5} />
       <blockquote className="cn" lang="zh-Hant">{q.cn.replace(/\\n/g, '\n')}</blockquote>
       <figcaption>

@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
 import { AnimatePresence, MotionConfig, motion } from 'motion/react'
 import Background from './components/Background'
-import { Shockwave } from './components/Intro'
 import Hero from './components/Hero'
 import WaveMap from './components/WaveMap'
 import Section from './components/Section'
@@ -11,6 +10,8 @@ import InnerLayer from './components/InnerLayer'
 import CharacterView from './components/CharacterView'
 import Dive from './components/Dive'
 import DiscordLink from './components/DiscordLink'
+import Search, { SearchButton } from './components/Search'
+import Chain from './components/Chain'
 import { CHARACTERS, INNER_UI } from './characters'
 import { SECTIONS } from './content'
 import { LangCtx, PACKS } from './lang'
@@ -19,7 +20,7 @@ import { useSettings } from './settings'
 
 const parse = () => {
   const h = decodeURIComponent(location.hash.slice(1))
-  if (h === 'map' || h === 'inner') return h
+  if (h === 'map' || h === 'inner' || h === 'chain') return h
   if (h.startsWith('c-') && CHARACTERS.some((c) => `c-${c.id}` === h)) return h
   if (SECTIONS.some((s) => s.id === h)) return h
   return 'intro'
@@ -28,7 +29,6 @@ const parse = () => {
 export default function App() {
   const [view, setView] = useState(parse)
   const [menu, setMenu] = useState(false)
-  const [ripple, setRipple] = useState(null)
   const settings = useSettings()
 
   useEffect(() => {
@@ -37,8 +37,13 @@ export default function App() {
     return () => removeEventListener('hashchange', f)
   }, [])
 
+  const [search, setSearch] = useState(false)
   useEffect(() => {
-    const onKey = (e) => e.key === 'Escape' && setMenu(false)
+    const onKey = (e) => {
+      if (e.key === 'Escape') setMenu(false)
+      const typing = /INPUT|TEXTAREA/.test(document.activeElement?.tagName || '')
+      if ((e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) || (e.key === '/' && !typing)) { e.preventDefault(); setMenu(false); setSearch(true) }
+    }
     addEventListener('keydown', onKey)
     return () => removeEventListener('keydown', onKey)
   }, [])
@@ -51,11 +56,8 @@ export default function App() {
     window.scrollTo({ top: 0, behavior: 'instant' })
   }
 
-  const explore = (x, y) => {
-    setRipple({ x, y, k: Date.now() })
-    setTimeout(() => go('map'), 700)
-    setTimeout(() => setRipple(null), 2200)
-  }
+  // the hero has already handed its Mark over, so the map takes over right away
+  const explore = () => go('map')
 
   const site = settings.s.site === 'acf' ? 'acf' : 'vsb'
   const pack = PACKS[site]
@@ -111,6 +113,7 @@ export default function App() {
           )}
         </AnimatePresence>
         <div className="top-right">
+          <SearchButton onClick={() => { setMenu(false); setSearch(true) }} />
           <DiscordLink />
           <Burger open={menu} onClick={() => setMenu((m) => !m)} />
         </div>
@@ -124,12 +127,13 @@ export default function App() {
           {view === 'map' && <WaveMap key="map" go={go} dive={dive} />}
           {view === 'inner' && <InnerLayer key={`inner-${site}`} open={(id, x, y) => dive(x, y, `c-${id}`, true)} surface={(x, y) => dive(x, y, 'map')} />}
           {view.startsWith('c-') && <CharacterView key={`${site}-${view}`} id={view.slice(2)} back={(x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, 'inner', true)} openChar={(id, x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, `c-${id}`, true)} />}
-          {view !== 'intro' && view !== 'map' && view !== 'inner' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
+          {view === 'chain' && <Chain key={`chain-${site}`} go={go} />}
+          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 
+      <AnimatePresence>{search && <Search key="search" close={() => setSearch(false)} go={go} />}</AnimatePresence>
       {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}
-      {ripple && <Shockwave key={ripple.k} x={ripple.x} y={ripple.y} size={1.2} />}
 
       {view !== 'intro' && (
         <footer className="foot">

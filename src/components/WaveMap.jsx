@@ -1,6 +1,6 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Sparkles } from '@react-three/drei'
+import { Environment, PerformanceMonitor, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import { motion } from 'motion/react'
 import studio from '@pmndrs/assets/hdri/studio.exr.js'
@@ -148,6 +148,44 @@ function CursorLight({ st }) {
   )
 }
 
+
+// Motes that only show up during the plunge: they stream into the seam with the camera.
+function Motes({ st }) {
+  const N = 260
+  const { geo, home } = useMemo(() => {
+    const home = new Float32Array(N * 3)
+    for (let i = 0; i < N; i++) {
+      home[i * 3] = (Math.random() - 0.5) * 2600
+      home[i * 3 + 1] = (Math.random() - 0.5) * 900
+      home[i * 3 + 2] = 40 + Math.random() * 40
+    }
+    const geo = new THREE.BufferGeometry()
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(home.slice(), 3))
+    return { geo, home }
+  }, [])
+  const mat = useRef()
+  useFrame(() => {
+    const s = st.current
+    const p = s.plunge
+    mat.current.opacity = Math.min(1, p * 3) * (1 - Math.max(0, p - 0.85) / 0.15)
+    if (!p) return
+    const a = geo.attributes.position.array
+    const pull = 1 - Math.pow(1 - p, 2.2)
+    for (let i = 0; i < N; i++) {
+      const lag = 0.55 + (i % 7) * 0.07
+      const k = Math.min(1, pull / lag)
+      a[i * 3] = home[i * 3] * (1 - k)
+      a[i * 3 + 1] = home[i * 3 + 1] * (1 - k) * (1 - k)
+    }
+    geo.attributes.position.needsUpdate = true
+  })
+  return (
+    <points geometry={geo} frustumCulled={false}>
+      <pointsMaterial ref={mat} size={2.4} sizeAttenuation={false} color="#ffe9c2" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+    </points>
+  )
+}
+
 function MarkScene({ st, nodes, k, u }) {
   const top = useMemo(() => buildHalf(nodes, k, 1), [nodes, k])
   const bot = useMemo(() => buildHalf(nodes, k, -1), [nodes, k])
@@ -173,6 +211,7 @@ function MarkScene({ st, nodes, k, u }) {
       <Half geo={top} dir={1} u={u} />
       <Half geo={bot} dir={-1} u={u} />
       <CursorLight st={st} />
+      <Motes st={st} />
       <Sparkles count={260} scale={[X1 - X0, 520, 80]} size={2.2} speed={0.25} opacity={0.45} color="#d6dcf6" noise={30} />
     </>
   )
@@ -181,12 +220,15 @@ function MarkScene({ st, nodes, k, u }) {
 export default function WaveMap({ go, dive }) {
   const { SECTIONS, UI } = usePack()
   const IU = INNER_UI[UI.lang]
+  const [fromHero] = useState(() => { const f = !!bus.fromHero; bus.fromHero = false; return f })
   const byId = useMemo(() => Object.fromEntries(SECTIONS.map((x) => [x.id, x])), [SECTIONS])
   const wrap = useRef(), layer = useRef(), view = useRef(), edgeL = useRef(), edgeR = useRef()
   const els = useRef({})
   const nodes = useMemo(makeNodes, [])
   const st = useRef({ plunge: 0, plunging: false, open: 0, openE: 0, force: false, off: 0, mx: null, my: null, drag: null, target: null, hover: null, touch: false, W: 0, H: 0, k: 1 })
   const [touch, setTouch] = useState(false)
+  const [dpr, setDpr] = useState(1.75)
+  const [born] = useState(() => performance.now())
   const [k, setK] = useState(1)
   const u = useMemo(() => ({
     uRad: { value: 0 }, uGap: { value: 0 }, uTime: { value: 0 },
@@ -252,16 +294,21 @@ export default function WaveMap({ go, dive }) {
 
     const onKey = (e) => {
       if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return
-      const cur = s.target ?? s.off
-      const xs = nodes.map((n) => n.x)
-      const nxt = e.key === 'ArrowRight' ? xs.find((x) => x > cur + 5) : [...xs].reverse().find((x) => x < cur - 5)
-      if (nxt != null) s.target = nxt
+      if (/INPUT|TEXTAREA/.test(document.activeElement?.tagName || '')) return
+      stepTo(e.key === 'ArrowRight' ? 1 : -1)
     }
     addEventListener('keydown', onKey)
     return () => { cancelAnimationFrame(raf); ro.disconnect(); removeEventListener('keydown', onKey) }
   }, [nodes])
 
   const s = st.current
+  // jump to the next spike left or right (arrow keys and the buttons under the minimap)
+  const stepTo = (dir) => {
+    const cur = s.target ?? s.off
+    const xs = nodes.map((n) => n.x).sort((a, b) => a - b)
+    const nxt = dir > 0 ? xs.find((x) => x > cur + 5) : [...xs].reverse().find((x) => x < cur - 5)
+    if (nxt != null) s.target = nxt
+  }
   const enterRift = (e) => {
     const r = e.currentTarget.parentElement.querySelector('.rift-core').getBoundingClientRect()
     const x = r.left + r.width / 2, y = r.top + r.height / 2
@@ -302,8 +349,9 @@ export default function WaveMap({ go, dive }) {
       transition={{ duration: 0.8 }}
     >
       <div className="wave-stage">
-        <motion.div className="wave-gl" initial={{ opacity: 0, clipPath: 'inset(0% 50% 0% 50%)' }} animate={{ opacity: 1, clipPath: 'inset(0% 0% 0% 0%)' }} transition={{ duration: 1.6, ease: [0.2, 0.8, 0.1, 1] }}>
-          <Canvas orthographic dpr={[1, 1.75]} camera={{ zoom: 1, position: [0, 0, 600], near: 1, far: 2000 }} gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}>
+        <motion.div className="wave-gl" initial={fromHero ? { opacity: 0, clipPath: 'inset(0% 0% 0% 0%)' } : { opacity: 0, clipPath: 'inset(0% 50% 0% 50%)' }} animate={{ opacity: 1, clipPath: 'inset(0% 0% 0% 0%)' }} transition={fromHero ? { duration: 0.55, ease: 'easeOut' } : { duration: 1.6, ease: [0.2, 0.8, 0.1, 1] }}>
+          <Canvas orthographic dpr={dpr} camera={{ zoom: 1, position: [0, 0, 600], near: 1, far: 2000 }} gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}>
+              <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setDpr(1)} flipflops={2} />
             <MarkScene st={st} nodes={nodes} k={k} u={u} />
           </Canvas>
         </motion.div>
@@ -362,6 +410,8 @@ export default function WaveMap({ go, dive }) {
 
       <footer className="wave-foot">
         <p className="wave-eyebrow">{UI.map.eyebrow}</p>
+        <div className="mini-row">
+        <button className="mini-step" onClick={() => stepTo(-1)} aria-label="←">←</button>
         <div className="mini" aria-label={UI.map.mini}>
           <span className="mini-line" />
           <span className="mini-view" ref={view} />
@@ -377,6 +427,8 @@ export default function WaveMap({ go, dive }) {
               <span>{byId[id].num}</span>
             </button>
           ))}
+        </div>
+        <button className="mini-step" onClick={() => stepTo(1)} aria-label="→">→</button>
         </div>
         <p className="wave-hint">{touch ? UI.map.hintTouch : UI.map.hintMouse}</p>
       </footer>

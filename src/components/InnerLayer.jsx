@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion } from 'motion/react'
 import { Canvas, useFrame, useThree } from '@react-three/fiber'
-import { Environment, Sparkles } from '@react-three/drei'
+import { Environment, PerformanceMonitor, Sparkles } from '@react-three/drei'
 import * as THREE from 'three'
 import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { CHARACTERS, INNER_UI } from '../characters'
@@ -124,6 +124,8 @@ export default function InnerLayer({ open, surface }) {
   const hoverRef = useRef(null)
   hoverRef.current = hover
   const wide = useWide()
+  const [dpr, setDpr] = useState(1.75)
+  const [born] = useState(() => performance.now())
 
   return (
     <motion.section
@@ -140,8 +142,9 @@ export default function InnerLayer({ open, surface }) {
 
       <div className={`inner-stage ${wide ? 'has-gl' : ''}`}>
         {wide && (
-          <Canvas className="inner-gl" orthographic resize={{ offsetSize: true }} dpr={[1, 1.75]} camera={{ zoom: 1, position: [0, 0, 600], near: 1, far: 2000 }}
+          <Canvas className="inner-gl" orthographic resize={{ offsetSize: true }} dpr={dpr} camera={{ zoom: 1, position: [0, 0, 600], near: 1, far: 2000 }}
             gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }} style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}>
+            <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setDpr(1)} flipflops={2} />
             <InnerScene hover={hoverRef} />
           </Canvas>
         )}

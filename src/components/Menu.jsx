@@ -1,4 +1,5 @@
 import { DISCORD } from './DiscordLink'
+import { PROOF_UI } from '../proofs'
 import MarkEdge from './MarkEdge'
 import { useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
@@ -52,6 +53,9 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                 <motion.div key="nav" initial="hidden" animate="show" exit={{ opacity: 0, y: 10 }} variants={list} className="menu-nav">
                   <motion.button variants={item} className={`menu-home ${view === 'map' ? 'on' : ''}`} onClick={() => go('map')}>
                     <span>◎</span> {M.map}
+                  </motion.button>
+                  <motion.button variants={item} className={`menu-home ${view === 'chain' ? 'on' : ''}`} onClick={() => go('chain')}>
+                    <span>⟶</span> {PROOF_UI[UI.lang].chain.menu}
                   </motion.button>
                   {groups.map((g) => (
                     <div key={g} className="menu-group">

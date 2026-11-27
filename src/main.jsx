@@ -24,3 +24,11 @@ createRoot(document.getElementById('root')).render(
     <App />
   </StrictMode>,
 )
+
+// Hide the boot screen once fonts are in and the first frames are painted (never longer than 4 s).
+const boot = document.getElementById('boot')
+if (boot) {
+  const hide = () => { boot.classList.add('gone'); setTimeout(() => boot.remove(), 900) }
+  const fonts = document.fonts?.ready ?? Promise.resolve()
+  Promise.race([fonts, new Promise((r) => setTimeout(r, 4000))]).then(() => requestAnimationFrame(() => requestAnimationFrame(hide)))
+}

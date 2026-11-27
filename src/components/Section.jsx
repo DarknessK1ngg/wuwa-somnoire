@@ -2,6 +2,7 @@ import MarkEdge, { MarkBadge, MarkRule } from './MarkEdge'
 import { lazy, Suspense, useState } from 'react'
 import { AnimatePresence, motion } from 'motion/react'
 import { usePack } from '../lang'
+import { SCANS, PROOF_UI } from '../proofs'
 
 const Corridor = lazy(() => import('./Corridor'))
 const ease = [0.2, 0.75, 0.1, 1]
@@ -28,9 +29,11 @@ function Key({ k }) {
   )
 }
 
-function Quote({ b }) {
+function Quote({ b, open }) {
+  const { UI } = usePack()
+  const scans = SCANS[b.key]
   return (
-    <motion.figure className={`quote ${b.big ? 'quote-big' : ''}`} {...reveal}>
+    <motion.figure className={`quote ${b.big ? 'quote-big' : ''}`} data-key={b.key} {...reveal}>
       <MarkEdge seed={(b.key || 'x').length} />
       <blockquote className="cn" lang="zh-Hant">{b.cn}</blockquote>
       <figcaption>
@@ -39,6 +42,7 @@ function Quote({ b }) {
           <span>{b.who}</span>
           <Key k={b.key} />
           <span className="ver">v{b.ver}</span>
+          {scans && <button className="scan-btn" onClick={() => open({ items: scans })}>{PROOF_UI[UI.lang].scan} ↗</button>}
         </div>
       </figcaption>
     </motion.figure>
@@ -123,8 +127,11 @@ function Verdict() {
 }
 
 function Steps({ go }) {
-  const steps = usePack().UI.steps
+  const { UI } = usePack()
+  const steps = UI.steps
+  const C = PROOF_UI[UI.lang].chain
   return (
+    <>
     <ol className="steps">
       {steps.map(([id, t, d], i) => (
         <motion.li key={id} {...reveal} transition={{ ...reveal.transition, delay: i * 0.08 }}>
@@ -137,6 +144,10 @@ function Steps({ go }) {
         </motion.li>
       ))}
     </ol>
+    <motion.button className="chain-link" onClick={() => go('chain')} {...reveal}>
+      <span>{C.menu}</span><small>{C.short}</small><i>→</i>
+    </motion.button>
+    </>
   )
 }
 
@@ -198,7 +209,7 @@ export default function Section({ id, go, settings }) {
   const renderBlock = (b, i) => {
     switch (b.type) {
       case 'h': return <motion.h3 key={i} {...reveal}>{b.text}</motion.h3>
-      case 'quote': return <Quote key={i} b={b} />
+      case 'quote': return <Quote key={i} b={b} open={setBox} />
       case 'figs': return <Figs key={i} items={b.items} open={setBox} />
       case 'rule':
         return (
@@ -211,7 +222,7 @@ export default function Section({ id, go, settings }) {
         )
       case 'objection':
         return (
-          <motion.div key={i} className="objection" {...reveal}>
+          <motion.div key={i} className="objection" data-key={b.key} {...reveal}>
             <MarkEdge seed={i + 61} spikes={4} />
             <p className="obj-q">“{b.q}”</p>
             <p className="cn obj-cn" lang="zh-Hant">{b.cn} <Key k={b.key} /></p>
@@ -272,8 +283,16 @@ export default function Section({ id, go, settings }) {
       <AnimatePresence>
         {box && (
           <motion.div className="lightbox" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setBox(null)}>
-            <motion.img layoutId={box.src} src={box.src} alt={box.cap} />
-            <p>{box.cap}</p>
+            {box.items ? (
+              <div className="lb-pair">
+                {box.items.map((f) => <figure key={f.src}><img src={f.src} alt={f.cap} /><figcaption>{f.cap}</figcaption></figure>)}
+              </div>
+            ) : (
+              <>
+                <motion.img layoutId={box.src} src={box.src} alt={box.cap} />
+                <p>{box.cap}</p>
+              </>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
