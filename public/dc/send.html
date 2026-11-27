@@ -1,0 +1,10 @@
+<!doctype html><meta charset="utf-8"><title>send</title><body style="background:#030306;color:#aaa;font:14px sans-serif">sending…<script>
+const files = ['avatar.jpg','server_icon.jpg','banner_welcome.jpg','banner_rules.jpg','banner_vsb.jpg','banner_acf.jpg','banner_lore.jpg','banner_voice.jpg','banner_splash.jpg','emoji_somnoire.png','emoji_rift.png','emoji_tier1b.png','emoji_quote.png'];
+(async () => {
+  for (const f of files) {
+    const buf = await (await fetch(f)).arrayBuffer();
+    window.opener && window.opener.postMessage({ dcfile: f, buf }, 'https://discord.com', [buf]);
+  }
+  document.body.textContent = 'done'; setTimeout(() => window.close(), 400);
+})();
+</script>
