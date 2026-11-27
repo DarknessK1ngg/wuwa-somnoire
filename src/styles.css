@@ -1246,3 +1246,4 @@ body:has(.descent) .bg { opacity: 0; }
 .cur-ring[data-mode='grab'] b { opacity: 1; inset: 0; background:
   linear-gradient(45deg, transparent 45%, #fff 46% 54%, transparent 55%) -10px 50% / 7px 7px no-repeat,
   linear-gradient(-45deg, transparent 45%, #fff 46% 54%, transparent 55%) calc(100% + 10px) 50% / 7px 7px no-repeat; }
+.sec-head .sec-num { margin-left: 12px; }

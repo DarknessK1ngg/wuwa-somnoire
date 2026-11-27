@@ -9,7 +9,7 @@ import { Sculpture, Wordmark } from './Chrome3D'
 // Each section's word on the margin (game terms where the section is about one) and its chrome piece.
 const MARGIN = {
   verdict: '無窮無盡', rules: '規則', remnant: '頻率', structure: '心之集域', sonoro: '索諾拉', fiction: '虛影',
-  recursion: '層層夢境', low1a: '待續', terms: '名詞', evidence: '證據', objections: '反駁', sources: '出處',
+  recursion: '層層夢境', low1a: '超越', terms: '名詞', evidence: '證據', objections: '反駁', sources: '出處',
 }
 const PIECE = {
   verdict: 'nested', rules: 'shard', remnant: 'orb', structure: 'door', sonoro: 'rings', fiction: 'mirror',
