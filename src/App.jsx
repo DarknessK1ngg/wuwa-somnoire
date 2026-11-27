@@ -13,6 +13,9 @@ import DiscordLink from './components/DiscordLink'
 import Search, { SearchButton } from './components/Search'
 import Chain from './components/Chain'
 import Descent from './components/Descent'
+import Chaos from './components/Chaos'
+import Film, { FILM_KEY } from './components/Film'
+import Depth from './components/Depth'
 import Stars from './components/Stars'
 import Trail from './components/Trail'
 import Cursor from './components/Cursor'
@@ -25,7 +28,7 @@ import { useSettings } from './settings'
 
 const parse = () => {
   const h = decodeURIComponent(location.hash.slice(1))
-  if (h === 'map' || h === 'inner' || h === 'chain' || h === 'descent') return h
+  if (h === 'map' || h === 'inner' || h === 'chain' || h === 'descent' || h === 'chaos') return h
   if (h.startsWith('c-') && CHARACTERS.some((c) => `c-${c.id}` === h)) return h
   if (SECTIONS.some((s) => s.id === h)) return h
   return 'intro'
@@ -43,6 +46,10 @@ export default function App() {
   }, [])
 
   const [search, setSearch] = useState(false)
+  // the opening film: once per browser, only on the front page and with animations on
+  const [film, setFilm] = useState(() => {
+    try { return view === 'intro' && settings.s.motion && !localStorage.getItem(FILM_KEY) } catch { return false }
+  })
   // sound must start from a click, so a saved "on" waits for the first interaction
   useEffect(() => {
     if (!settings.s.sound) { setSound(false); return }
@@ -137,22 +144,25 @@ export default function App() {
         </div>
       </header>
 
-      <Menu open={menu} view={view} go={go} settings={settings} switchSite={switchSite} />
+      <Menu open={menu} view={view} go={go} settings={settings} switchSite={switchSite} playFilm={() => { setMenu(false); go('intro'); setFilm(true) }} />
 
       <main>
         <AnimatePresence mode="wait">
-          {view === 'intro' && <Hero key={`intro-${site}`} onExplore={explore} settings={settings} />}
+          {view === 'intro' && !film && <Hero key={`intro-${site}`} onExplore={explore} settings={settings} />}
           {view === 'map' && <WaveMap key="map" go={go} dive={dive} />}
           {view === 'inner' && <InnerLayer key={`inner-${site}`} open={(id, x, y) => dive(x, y, `c-${id}`, true)} surface={(x, y) => dive(x, y, 'map')} />}
           {view.startsWith('c-') && <CharacterView key={`${site}-${view}`} id={view.slice(2)} back={(x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, 'inner', true)} openChar={(id, x, y) => dive(x ?? innerWidth / 2, y ?? innerHeight / 2, `c-${id}`, true)} />}
           {view === 'chain' && <Chain key={`chain-${site}`} go={go} />}
           {view === 'descent' && <Descent key={`descent-${site}`} go={go} />}
-          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && view !== 'descent' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
+          {view === 'chaos' && <Chaos key={`chaos-${site}`} go={go} />}
+          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && view !== 'descent' && view !== 'chaos' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 
+      <AnimatePresence>{view === 'intro' && film && <Film key="film" onDone={() => setFilm(false)} sound={settings.s.sound} toggleSound={() => settings.update({ sound: !settings.s.sound })} />}</AnimatePresence>
       <Stars on={settings.s.motion} />
       <Cursor />
+      <Depth view={view} go={go} />
       {view.startsWith('c-') && <Trail key={view} id={view.slice(2)} />}
       <AnimatePresence>{search && <Search key="search" close={() => setSearch(false)} go={go} />}</AnimatePresence>
       {diving && <Dive key={diving.k} x={diving.x} y={diving.y} short={diving.short} label={INNER_UI[pack.UI.lang].decoding} />}

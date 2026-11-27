@@ -74,6 +74,7 @@ function Tunnel({ depth }) {
   }), [])
   const seamU = useMemo(() => Array.from({ length: SLOTS }, () => ({ uCol: { value: new THREE.Color('#ffc870') }, uOpen: { value: 0 } })), [])
   const slots = useRef([])
+  const seamMats = useRef([])
   const dust = useMemo(() => {
     const N = 900, a = new Float32Array(N * 3)
     for (let i = 0; i < N; i++) { a[i * 3] = (Math.random() - 0.5) * 22; a[i * 3 + 1] = (Math.random() - 0.5) * 12; a[i * 3 + 2] = -Math.random() * D * SLOTS }
@@ -104,6 +105,8 @@ function Tunnel({ depth }) {
       g.children[1].position.y = -0.06 - open * 4.2
       seamU[k].uOpen.value = THREE.MathUtils.clamp(open * 1.4, 0, 1) * THREE.MathUtils.clamp(dist / 2, 0, 1)
       moodLerp(seamU[k].uCol.value, 'seam', 0.08)
+      const sm = seamMats.current[k]
+      if (sm) { sm.uniforms.uOpen.value = seamU[k].uOpen.value; sm.uniforms.uCol.value.copy(seamU[k].uCol.value) }
     }
     dustRef.current.position.z = Math.floor(z / (D * SLOTS)) * D * SLOTS + D * 2
     moodLerp(dustMat.current.color, 'seam', 0.05)
@@ -123,7 +126,7 @@ function Tunnel({ depth }) {
           <mesh geometry={bot} material={mat} />
           <mesh position={[0, 0, -0.05]}>
             <planeGeometry args={[19, 9]} />
-            <shaderMaterial vertexShader={seamVert} fragmentShader={seamFrag} uniforms={seamU[k]} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
+            <shaderMaterial ref={(el) => { seamMats.current[k] = el }} vertexShader={seamVert} fragmentShader={seamFrag} uniforms={seamU[k]} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
           </mesh>
         </group>
       ))}
@@ -207,7 +210,8 @@ export default function Descent({ go }) {
             <h3>{T.end[1]}</h3>
             <p>{T.end[2]}</p>
             <div>
-              <button className="hero-enter" onClick={() => go('chain')}>{T.chain} →</button>
+              <button className="hero-enter" onClick={() => go('chaos')}>{UI.lang === 'ru' ? 'Ниже — Хаос ↓' : 'Below: Chaos ↓'}</button>
+              <button className="crumb" onClick={() => go('chain')}>{T.chain} →</button>
               <button className="crumb" onClick={() => go('map')}>{T.map}</button>
             </div>
           </div>

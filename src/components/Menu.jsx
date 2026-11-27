@@ -22,7 +22,7 @@ const item = {
   show: { opacity: 1, x: 0, filter: 'blur(0px)', transition: { type: 'spring', stiffness: 220, damping: 24 } },
 }
 
-export default function Menu({ open, view, go, settings, switchSite }) {
+export default function Menu({ open, view, go, settings, switchSite, playFilm }) {
   const { SECTIONS, UI } = usePack()
   const M = UI.menu
   const groups = [...new Set(SECTIONS.map((x) => x.group))]
@@ -59,6 +59,12 @@ export default function Menu({ open, view, go, settings, switchSite }) {
                   </motion.button>
                   <motion.button variants={item} className={`menu-home ${view === 'descent' ? 'on' : ''}`} onClick={() => go('descent')}>
                     <span>↓</span> {UI.lang === 'ru' ? 'Спуск сквозь сны' : 'The descent'}
+                  </motion.button>
+                  <motion.button variants={item} className={`menu-home ${view === 'chaos' ? 'on' : ''}`} onClick={() => go('chaos')}>
+                    <span>✳</span> {UI.lang === 'ru' ? 'Хаос · 混沌' : 'Chaos · 混沌'}
+                  </motion.button>
+                  <motion.button variants={item} className="menu-home" onClick={playFilm}>
+                    <span>▸</span> {UI.lang === 'ru' ? 'Вступительный фильм' : 'Opening film'}
                   </motion.button>
                   {groups.map((g) => (
                     <div key={g} className="menu-group">
