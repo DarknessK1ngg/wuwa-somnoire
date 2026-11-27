@@ -16,7 +16,6 @@
     "@react-three/drei": "^10.7.6",
     "@react-three/fiber": "^9.4.0",
     "@react-three/postprocessing": "^3.2.2",
-    "@shadergradient/react": "^2.4.20",
     "motion": "^14.14.0",
     "postprocessing": "^6.39.6",
     "react": "^19.2.0",

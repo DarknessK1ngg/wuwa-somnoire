@@ -24,7 +24,7 @@ uniform vec2 uRes, uMouse, uVel;
 uniform float uTime, uPan, uZoom, uDim, uFade, uSpeed, uMotion;
 uniform vec2 uShot;
 uniform vec4 uShock;
-uniform vec3 uAura, uFog;
+uniform vec3 uAura, uFog, uTint;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
 float vnoise(vec2 p) {
@@ -117,10 +117,16 @@ void main() {
   if (rf > 0.002) fa.rgb = mix(fa.rgb, riftColor(uF, rf), smoothstep(0.0, 0.07, rf));
   if (rn > 0.002) n.rgb = mix(n.rgb, riftColor(uN * vec2(1.0, 1.0) + 0.37, rn), smoothstep(0.0, 0.05, rn));
 
-  // Dark atmosphere: the colour field behind shows through as a tint.
-  float sky = smoothstep(-0.5, 0.6, p.y);
-  vec3 col = uFog * 0.05;
-  float a = mix(0.62, 0.42, sky);
+  // Night sky: near black, a cold moonlit bloom, slow cloud banks (same world as the hero)
+  float skyGlow = exp(-pow(length(p - vec2(0.12, 0.5)) * 1.25, 2.0));
+  vec2 cq = p / uZoom * 1.15 + vec2((uPan + uShot.x) * 0.05 + uTime * 0.008, uShot.y * 0.05);
+  vec2 cw = vec2(fbm(cq * 1.4 + vec2(uTime * 0.02, 0.0)), fbm(cq * 1.4 + vec2(3.1, -uTime * 0.015)));
+  float cl = fbm(cq * 1.9 + cw * 1.6);
+  vec3 col = mix(vec3(0.012, 0.013, 0.02), uTint * 0.34, skyGlow);
+  col += vec3(0.72, 0.75, 0.84) * smoothstep(0.36, 0.85, cl) * (0.1 + 0.22 * skyGlow) * (0.45 + 0.55 * smoothstep(-0.4, 0.4, p.y));
+  // pale haze along the horizon, so the black ridges read as silhouettes
+  col += vec3(0.5, 0.53, 0.62) * 0.22 * exp(-pow((p.y + 0.06) * 3.2, 2.0));
+  float a = 1.0;
   col = s.rgb * s.a + col * (1.0 - s.a); a = s.a + a * (1.0 - s.a);
   vec3 farC = mix(fa.rgb, uFog * 0.7, 0.3 * (1.0 - smoothstep(0.0, 0.1, rf) * 0.7));
   col = farC * fa.a + col * (1.0 - fa.a); a = fa.a + a * (1.0 - fa.a);
@@ -216,6 +222,7 @@ function Plane({ shot, s, layers }) {
     uShock: { value: new THREE.Vector4(0, 0, -100, 0) },
     uAura: { value: hex3('#ffc870') },
     uFog: { value: hex3('#2a2448') },
+    uTint: { value: hex3('#8a9ab8') },
   }), [layers])
 
   useEffect(() => {
@@ -231,11 +238,14 @@ function Plane({ shot, s, layers }) {
     const u = uniforms
     hex3(s.aura || '#ffc870', u.uAura.value)
     const a = hex3(s.c3), b = hex3(s.c1), c = hex3('#9a94c0')
-    u.uFog.value.copy(a.lerp(b, 0.35).lerp(c, 0.25))
+    u.uFog.value.copy(a.lerp(b, 0.35).lerp(c, 0.6))
+    const t2 = hex3(s.c2), grey = hex3('#8c96ac')
+    u.uTint.value.copy(t2.lerp(grey, 0.6))
     u.uMotion.value = s.motion ? 1 : 0
-  }, [s.aura, s.c1, s.c3, s.motion, uniforms])
+  }, [s.aura, s.c1, s.c2, s.c3, s.motion, uniforms])
 
   useFrame((_, dtRaw) => {
+    window.__scnU = uniforms
     const dt = Math.min(0.05, dtRaw)
     const u = uniforms
     const k = st.current
@@ -280,7 +290,7 @@ export default function Scenery({ shot, s }) {
   const [layers, setLayers] = useState(null)
   useEffect(() => {
     let id
-    const run = () => setLayers(buildScenery())
+    const run = () => { try { setLayers(buildScenery()) } catch (e) { console.error('scenery build failed', e) } }
     if ('requestIdleCallback' in window) id = requestIdleCallback(run, { timeout: 600 })
     else id = setTimeout(run, 50)
     return () => ('cancelIdleCallback' in window ? cancelIdleCallback(id) : clearTimeout(id))
@@ -291,6 +301,7 @@ export default function Scenery({ shot, s }) {
       className="scenery"
       style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
       dpr={[1, 1.75]}
+      frameloop={shot === 'intro' ? 'never' : 'always'}
       gl={{ antialias: false, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' }}
       flat
       linear

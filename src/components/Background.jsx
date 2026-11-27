@@ -1,52 +1,40 @@
-import { ShaderGradientCanvas, ShaderGradient } from '@shadergradient/react'
-import Scenery from './Scenery'
+import { useMemo, useRef } from 'react'
+import { Canvas, useFrame } from '@react-three/fiber'
+import { Sparkles } from '@react-three/drei'
+import { Fog } from './FogSky'
+import { bus } from '../bus'
 
-// Camera framing per screen: the gradient "moves" with the visitor.
-const SHOTS = {
-  intro: { cAzimuthAngle: 180, cPolarAngle: 90, cDistance: 3.4, uStrength: 3.4, uDensity: 1.3, rotationZ: 50 },
-  map: { cAzimuthAngle: 210, cPolarAngle: 115, cDistance: 4.6, uStrength: 2.6, uDensity: 1.1, rotationZ: 20 },
-  section: { cAzimuthAngle: 160, cPolarAngle: 75, cDistance: 5.6, uStrength: 2.2, uDensity: 0.9, rotationZ: 70 },
-  inner: { cAzimuthAngle: 250, cPolarAngle: 120, cDistance: 3.0, uStrength: 3.8, uDensity: 1.6, rotationZ: 110 },
-  char: { cAzimuthAngle: 140, cPolarAngle: 70, cDistance: 4.8, uStrength: 2.4, uDensity: 1.0, rotationZ: 30 },
+// The same moonlit fog as the hero, behind every other screen. The clouds drift with
+// travel along the Mark and each screen sits at its own depth.
+const DEPTH = { intro: 0, map: 0.12, section: 0.3, inner: 0.55, char: 0.4 }
+
+function World({ shot, s }) {
+  const prog = useRef(0)
+  const pan = useRef(0)
+  useFrame((_, dt) => {
+    prog.current += ((DEPTH[shot] ?? 0.3) - prog.current) * Math.min(1, dt * 1.5)
+    pan.current = bus.pan / 2600
+  })
+  return (
+    <>
+      <Fog front={false} prog={prog} tint={s.c2} aura={s.aura || '#ffc870'} pan={pan} />
+      <Sparkles count={70} scale={[12, 7, 4]} size={1.4} speed={s.motion ? 0.2 : 0} opacity={0.35} color="#d6dcf6" />
+    </>
+  )
 }
 
 export default function Background({ shot, s }) {
-  const cam = SHOTS[shot] || SHOTS.section
   return (
     <div className="bg" aria-hidden="true">
-      <ShaderGradientCanvas
-        style={{ position: 'absolute', inset: 0 }}
-        pixelDensity={1}
-        fov={45}
-        pointerEvents="none"
-        lazyLoad={false}
+      <Canvas
+        style={{ position: 'absolute', inset: 0, pointerEvents: 'none' }}
+        dpr={[1, 1.25]}
+        frameloop={shot === 'intro' ? 'never' : 'always'}
+        camera={{ fov: 32, position: [0, 0, 7] }}
+        gl={{ antialias: false, powerPreference: 'high-performance' }}
       >
-        <ShaderGradient
-          control="props"
-          type="waterPlane"
-          animate={s.motion ? 'on' : 'off'}
-          uTime={0.2}
-          uSpeed={0.16}
-          uFrequency={5.5}
-          uAmplitude={0}
-          positionX={0}
-          positionY={0}
-          positionZ={0}
-          rotationX={0}
-          rotationY={10}
-          color1={s.c1}
-          color2={s.c2}
-          color3={s.c3}
-          reflection={0.1}
-          lightType="3d"
-          brightness={s.mode === 'light' ? 1.35 : 1.15}
-          grain={s.grain ? 'on' : 'off'}
-          enableTransition
-          smoothTime={0.6}
-          {...cam}
-        />
-      </ShaderGradientCanvas>
-      <Scenery shot={shot} s={s} />
+        <World shot={shot} s={s} />
+      </Canvas>
       <div className={`veil veil-${shot === 'inner' ? 'map' : shot === 'char' ? 'section' : shot}`} />
     </div>
   )
