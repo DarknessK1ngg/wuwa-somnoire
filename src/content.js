@@ -391,7 +391,7 @@ export const SECTIONS = [
         tone: 'muted',
         title: 'What about 1-A?',
         text:
-          'Not claimed. It would need a line showing waking reality itself as fiction to something higher.',
+          'Not for the world itself: that would need a line showing waking reality as fiction to something higher. 1-A is claimed for one being only, Aleph-1, the void below Chaos. It has its own page at the bottom of the world.',
       },
     ],
   },
@@ -522,7 +522,7 @@ export const UI = {
   sec: { map: '← Map', prev: 'Previous', next: 'Next', done: 'Done', back: 'Back to the map', copy: 'Copy key', copied: 'copied', open: 'Open full size' },
   foot: 'Fan analysis for VS Battles. Not affiliated with Kuro Games. Game text © Kuro Games.',
   tiers: [
-    ['1-A', 'Exceeds Low 1-A as far as Low 1-A exceeds High 1-B', 'no'],
+    ['1-A', 'Exceeds Low 1-A as far as Low 1-A exceeds High 1-B', 'aleph'],
     ['Low 1-A', 'Above a High 1-B hierarchy as a whole', 'case'],
     ['High 1-B', 'Countably infinite qualitative steps above a universe', 'yes'],
     ['1-B', '8 to any finite number of levels of infinity (R^12+)', ''],
@@ -530,7 +530,7 @@ export const UI = {
     ['Low 1-C', '1 to 2 levels of infinity (R^5 to R^6)', ''],
     ['Universe', 'The baseline: one standard universe', ''],
   ],
-  tierTags: { yes: 'dream hierarchy', case: 'waking reality', no: 'not claimed' },
+  tierTags: { yes: 'dream hierarchy', case: 'waking reality', aleph: 'Aleph-1 · claim', no: 'not claimed' },
   nest: [
     ['Waking reality', 'Solaris. Real people, real bodies.'],
     ['Door → the Somnoire', 'The medium that stores every dream. 載體.'],
@@ -542,7 +542,7 @@ export const UI = {
   verdict: [
     ['High 1-B', 'The dream hierarchy', 'Countably infinite layers. Each one a full universe and recorded fiction for the layer above.', 'yes'],
     ['Low 1-A', 'Waking reality', 'Above the whole hierarchy at once: every layer is recorded fiction to it. The gap is existential — section 07.', 'yes'],
-    ['1-A', 'Not claimed', 'Would need a line showing reality itself as fiction to something higher.', 'no'],
+    ['1-A', 'Aleph-1 · claim', 'The void everything begins in: to it the whole structure, waking reality included, is equally meaningless. See the Aleph-1 page at the very bottom of the world.', 'case'],
   ],
   steps: [
     ['sonoro', 'A Sonoro is a universe', 'Its own space, its own time, and it unfolds without limit.'],

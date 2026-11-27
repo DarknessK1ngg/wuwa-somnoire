@@ -1,4 +1,6 @@
 import { CHARACTERS } from './characters.js'
+import { CHAOS_LINES } from './chaos.js'
+import { ALEPH_LINES } from './aleph.js'
 
 // Scans that show exactly the quoted line (CN and EN client). Only verified pairs go here.
 export const SCANS = {
@@ -101,5 +103,7 @@ export function buildIndex(SECTIONS, lang) {
     for (const q of c.lore?.quotes || []) push(q, c.name[lang])
     for (const q of c.abilities?.quotes || []) push(q, c.name[lang])
   }
+  for (const l of CHAOS_LINES) out.push({ cn: l.cn, tr: l[lang], key: l.key, ver: l.ver, where: lang === 'ru' ? 'Хаос' : 'Chaos', who: l.who[lang], view: 'chaos' })
+  for (const l of ALEPH_LINES) out.push({ cn: l.cn, tr: l[lang], key: l.key, ver: l.ver, where: lang === 'ru' ? 'Алеф-1' : 'Aleph-1', who: l.who[lang], view: 'aleph' })
   return out
 }

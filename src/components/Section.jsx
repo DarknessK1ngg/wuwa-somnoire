@@ -116,6 +116,7 @@ function Ladder() {
           <span>{d}</span>
           {mark === 'yes' && <em>{UI.tierTags.yes}</em>}
           {mark === 'case' && <em>{UI.tierTags.case}</em>}
+          {mark === 'aleph' && <em>{UI.tierTags.aleph}</em>}
           {mark === 'no' && <em className="muted">{UI.tierTags.no}</em>}
         </motion.div>
       ))}

@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'motion/react'
 import { Canvas, useFrame } from '@react-three/fiber'
-import { Environment, PerformanceMonitor, Sparkles } from '@react-three/drei'
+import { Environment, PerformanceMonitor, Sparkles, MeshReflectorMaterial } from '@react-three/drei'
 import { EffectComposer, Bloom, Vignette, Noise } from '@react-three/postprocessing'
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js'
 import * as THREE from 'three'
@@ -9,82 +9,153 @@ import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { usePack } from '../lang'
 import { bus, moodLerp } from '../bus'
 import { CHAOS_LINES, CHAOS_TXT } from '../chaos'
+import { rng, dotTexture, universeMaterial, placeUniverses, textBand } from '../cosmos'
 
-// ---------- the tree: a twisted trunk of three strands, branching outward, grown by a uniform ----------
-function rng(seed) { let s = seed >>> 0; return () => ((s = (s * 1664525 + 1013904223) >>> 0) / 4294967296) }
-
+// ---------- the tree: one trunk with roots, a crown of ever finer branches, grown by a uniform ----------
 function buildTree() {
   const r = rng(11)
-  const parts = [], tips = []
-  const SPEED = 3.2 // world units per second of growth
-  const tube = (pts, r0, r1, birth, depth) => {
-    const curve = new THREE.CatmullRomCurve3(pts)
+  const parts = [], tips = [], twigs = []
+  const SPEED = 3.0 // world units per second of growth
+  const tube = (curve, radAt, birth, radial) => {
     const len = curve.getLength()
-    const segs = Math.max(6, Math.round(len * 5)), rad = depth < 2 ? 10 : 6
-    const g = new THREE.TubeGeometry(curve, segs, 1, rad, false)
-    const pos = g.attributes.position, n = pos.count
+    const segs = Math.max(4, Math.round(len * (radial > 8 ? 10 : 5)))
+    const g = new THREE.TubeGeometry(curve, segs, 1, radial, false)
+    const pos = g.attributes.position, uv = g.attributes.uv, n = pos.count
     const aT = new Float32Array(n), aB = new Float32Array(n), aD = new Float32Array(n)
     const c = new THREE.Vector3()
     for (let i = 0; i <= segs; i++) {
       const t = i / segs
       curve.getPointAt(t, c)
-      const rr = r0 + (r1 - r0) * t
-      for (let j = 0; j <= rad; j++) {
-        const k = i * (rad + 1) + j
+      const rr = radAt(t)
+      for (let j = 0; j <= radial; j++) {
+        const k = i * (radial + 1) + j
         pos.setXYZ(k, c.x + (pos.getX(k) - c.x) * rr, c.y + (pos.getY(k) - c.y) * rr, c.z + (pos.getZ(k) - c.z) * rr)
+        uv.setXY(k, (t * len) / 1.5, j / radial)
         aT[k] = t; aB[k] = birth; aD[k] = len / SPEED
       }
     }
     g.setAttribute('aT', new THREE.BufferAttribute(aT, 1))
     g.setAttribute('aB', new THREE.BufferAttribute(aB, 1))
     g.setAttribute('aD', new THREE.BufferAttribute(aD, 1))
-    g.deleteAttribute('uv')
     g.computeVertexNormals()
     parts.push(g)
-    return { curve, end: birth + len / SPEED }
+    return birth + len / SPEED
   }
   const branch = (from, dir, len, rad, depth, birth) => {
     const pts = [from.clone()]
     let p = from.clone(), d = dir.clone()
     for (let i = 1; i <= 4; i++) {
-      d.add(new THREE.Vector3((r() - 0.5) * 0.35, 0.08 + (r() - 0.5) * 0.15, (r() - 0.5) * 0.35)).normalize()
+      const out = new THREE.Vector3(p.x, 0, p.z).normalize().multiplyScalar(0.06)
+      const lift = rad > 0.05 ? 0.07 : -0.035 // thick limbs reach up, thin twigs start to droop
+      d.add(new THREE.Vector3((r() - 0.5) * 0.42, lift + (r() - 0.5) * 0.16, (r() - 0.5) * 0.42)).add(out).normalize()
       p = p.clone().addScaledVector(d, len / 4)
       pts.push(p)
     }
-    const { curve, end } = tube(pts, rad, rad * 0.62, birth, depth)
-    if (depth >= 5 || rad < 0.025) { tips.push({ p: p.clone(), t: end }); return }
-    const kids = depth < 2 ? 3 : 2 + (r() < 0.5 ? 1 : 0)
+    const curve = new THREE.CatmullRomCurve3(pts)
+    const radial = rad > 0.12 ? 12 : rad > 0.05 ? 8 : rad > 0.025 ? 6 : 4
+    const end = tube(curve, (t) => rad * (1 - 0.32 * t), birth, radial)
+    if (depth >= 6 || rad < 0.016) {
+      twigs.push({ curve, birth, end })
+      tips.push({ p: p.clone(), t: end, depth })
+      return
+    }
+    const kids = depth < 3 ? 3 : depth < 4 ? 2 + (r() < 0.5 ? 1 : 0) : 2
     for (let k = 0; k < kids; k++) {
-      const at = 0.55 + r() * 0.45
-      const o = curve.getPointAt(at)
-      const tan = curve.getTangentAt(at)
-      const side = new THREE.Vector3(r() - 0.5, 0, r() - 0.5).normalize()
-      const nd = tan.clone().multiplyScalar(0.55).addScaledVector(side, 0.75 + r() * 0.3).add(new THREE.Vector3(0, 0.35 + r() * 0.3, 0)).normalize()
-      branch(o, nd, len * (0.62 + r() * 0.16), rad * 0.6, depth + 1, birth + (end - birth) * at)
+      const apical = k === 0
+      const at = apical ? 1 : 0.35 + r() * 0.6
+      const o = curve.getPointAt(at), tan = curve.getTangentAt(at)
+      const side = new THREE.Vector3(r() - 0.5, (r() - 0.5) * 0.3, r() - 0.5).normalize()
+      const nd = apical
+        ? tan.clone().add(new THREE.Vector3((r() - 0.5) * 0.3, 0.05, (r() - 0.5) * 0.3)).normalize()
+        : tan.clone().multiplyScalar(0.5).addScaledVector(side, 0.8 + r() * 0.3).add(new THREE.Vector3(0, 0.25, 0)).normalize()
+      const here = rad * (1 - 0.32 * at)
+      branch(o, nd, len * (0.72 + r() * 0.12), here * (apical ? 0.78 : 0.55 + r() * 0.15), depth + 1, birth + (end - birth) * at)
     }
   }
-  // trunk: three strands twisting around each other, like the bough in the game
-  const H = 5.2
-  const tops = []
-  for (let s = 0; s < 3; s++) {
-    const pts = []
-    for (let i = 0; i <= 12; i++) {
-      const t = i / 12, a = s * (Math.PI * 2 / 3) + t * Math.PI * 1.6
-      const w = 0.34 * (1 - t * 0.5)
-      pts.push(new THREE.Vector3(Math.cos(a) * w, t * H, Math.sin(a) * w))
+  // trunk with a flared foot
+  const H = 4.6
+  const trunk = new THREE.CatmullRomCurve3([
+    new THREE.Vector3(0, -0.3, 0), new THREE.Vector3(0.06, 1.1, 0.03), new THREE.Vector3(-0.12, 2.3, 0.1),
+    new THREE.Vector3(0.1, 3.5, -0.06), new THREE.Vector3(0, H, 0),
+  ])
+  const tEnd = tube(trunk, (t) => 0.2 + 0.2 * (1 - t) + 0.32 * Math.exp(-(t + 0.02) * 16), 0, 16)
+  // roots running out over the pool
+  for (let k = 0; k < 7; k++) {
+    const a = (k / 7) * Math.PI * 2 + r() * 0.4, L = 1.8 + r() * 1.6
+    const dir = new THREE.Vector3(Math.cos(a), 0, Math.sin(a))
+    const pts = [new THREE.Vector3(dir.x * 0.22, 0.32, dir.z * 0.22)]
+    for (let i = 1; i <= 4; i++) {
+      const t = i / 4
+      const q = dir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), (r() - 0.5) * 0.5 * t)
+      pts.push(new THREE.Vector3(q.x * (0.3 + L * t), 0.3 * (1 - t) * (1 - t) - 0.04 * t, q.z * (0.3 + L * t)))
     }
-    const { end } = tube(pts, 0.2, 0.13, 0, 0)
-    tops.push({ p: pts[pts.length - 1], a: s * (Math.PI * 2 / 3), end })
+    tube(new THREE.CatmullRomCurve3(pts), (t) => 0.17 * (1 - t) + 0.012, 0, 8)
   }
-  for (const t of tops) {
-    for (let k = 0; k < 2; k++) {
-      const a = t.a + k * 1.1 + 0.4
-      branch(t.p, new THREE.Vector3(Math.cos(a) * 0.8, 1, Math.sin(a) * 0.8).normalize(), 3.1, 0.12, 1, t.end * 0.92)
-    }
+  // limbs round the upper trunk, plus a leader carrying on up
+  for (let k = 0; k < 5; k++) {
+    const t = 0.56 + k * 0.1, a = k * 2.399
+    const o = trunk.getPointAt(Math.min(1, t))
+    branch(o, new THREE.Vector3(Math.cos(a), 0.75 + k * 0.08, Math.sin(a)).normalize(), 2.7 - k * 0.12, 0.17 - k * 0.012, 1, tEnd * t)
   }
+  branch(trunk.getPointAt(1), new THREE.Vector3(0.05, 1, 0.02).normalize(), 2.4, 0.17, 1, tEnd)
+
   const geo = mergeGeometries(parts)
+  geo.computeBoundingBox()
   const total = Math.max(...tips.map((t) => t.t))
-  return { geo, tips, total }
+  const bb = geo.boundingBox
+  return { geo, tips, twigs, total, top: bb.max.y, spread: Math.max(bb.max.x, -bb.min.x, bb.max.z, -bb.min.z) }
+}
+
+// pale bark: furrows running along the branch, fine grain, dark birch-like marks across. Tiles both ways.
+function barkTexture() {
+  const W = 512, Hh = 512
+  const c = document.createElement('canvas'); c.width = W; c.height = Hh
+  const x = c.getContext('2d'), img = x.createImageData(W, Hh), d = img.data
+  const r = rng(3), ph = Array.from({ length: 6 }, () => r() * 6.283)
+  const hash = (i, j) => { const v = Math.sin(i * 127.1 + j * 311.7) * 43758.5453; return v - Math.floor(v) }
+  for (let j = 0; j < Hh; j++) {
+    for (let i = 0; i < W; i++) {
+      const u = i / W, v = j / Hh
+      // u runs along the branch: furrows are lines of constant v, wavering with u
+      const w = v * 9 + 0.18 * Math.sin(6.283 * (u * 2) + ph[0]) + 0.08 * Math.sin(6.283 * (u * 5 + v * 2) + ph[1]) + 0.05 * Math.sin(6.283 * (u * 11) + ph[2])
+      const f = Math.abs(Math.sin(Math.PI * w))
+      const ridge = Math.pow(f, 0.45)
+      const grain = 0.88 + 0.12 * hash(i, j)
+      let l = (0.42 + 0.58 * ridge) * grain
+      d[(j * W + i) * 4] = l * 236; d[(j * W + i) * 4 + 1] = l * 240; d[(j * W + i) * 4 + 2] = l * 248; d[(j * W + i) * 4 + 3] = 255
+    }
+  }
+  x.putImageData(img, 0, 0)
+  // short dark marks across the furrows
+  x.fillStyle = 'rgba(40,44,56,.55)'
+  for (let k = 0; k < 120; k++) {
+    const px = r() * W, py = r() * Hh, w = 2 + r() * 3, h = 10 + r() * 34
+    x.fillRect(px, py, w, h); x.fillRect(px, py - Hh, w, h)
+  }
+  const t = new THREE.CanvasTexture(c)
+  t.wrapS = t.wrapT = THREE.RepeatWrapping
+  t.colorSpace = THREE.SRGBColorSpace
+  t.anisotropy = 8
+  return t
+}
+
+function leafTexture() {
+  const c = document.createElement('canvas'); c.width = 128; c.height = 256
+  const x = c.getContext('2d')
+  x.beginPath(); x.moveTo(64, 250)
+  x.bezierCurveTo(4, 190, 10, 60, 64, 6); x.bezierCurveTo(118, 60, 124, 190, 64, 250); x.closePath()
+  const g = x.createLinearGradient(0, 0, 0, 256)
+  g.addColorStop(0, '#ffffff'); g.addColorStop(1, '#d8e2f4')
+  x.fillStyle = g; x.fill()
+  x.strokeStyle = 'rgba(150,165,195,.7)'; x.lineWidth = 2.2
+  x.beginPath(); x.moveTo(64, 248); x.lineTo(64, 14); x.stroke()
+  x.lineWidth = 1.1
+  for (let i = 0; i < 7; i++) {
+    const y = 210 - i * 26
+    x.beginPath(); x.moveTo(64, y); x.quadraticCurveTo(84, y - 14, 102, y - 34 + i * 2); x.stroke()
+    x.beginPath(); x.moveTo(64, y); x.quadraticCurveTo(44, y - 14, 26, y - 34 + i * 2); x.stroke()
+  }
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t
 }
 
 const leafVert = /* glsl */ `
@@ -96,9 +167,9 @@ void main() {
   p.x += sin(uTime * 0.8 + aR * 40.0) * 0.05; p.y += sin(uTime * 0.6 + aR * 17.0) * 0.04;
   vec4 mv = modelViewMatrix * vec4(p, 1.0);
   float on = smoothstep(aB, aB + 0.9, uG);
-  vA = on * (0.55 + 0.45 * sin(uTime * (1.5 + aR * 3.0) + aR * 50.0));
+  vA = on * (0.5 + 0.5 * sin(uTime * (1.5 + aR * 3.0) + aR * 50.0));
   vR = aR;
-  gl_PointSize = min(44.0, uSize * (0.35 + aR * aR) * on * (300.0 / -mv.z));
+  gl_PointSize = min(30.0, uSize * (0.3 + aR * aR) * on * (300.0 / -mv.z));
   gl_Position = projectionMatrix * mv;
 }`
 const leafFrag = /* glsl */ `
@@ -107,8 +178,8 @@ varying float vA; varying float vR;
 void main() {
   vec2 c = gl_PointCoord - 0.5; float d = length(c);
   float a = smoothstep(0.5, 0.0, d); a = a * a * 0.9;
-  vec3 col = mix(vec3(0.72, 0.84, 1.0), vec3(1.0), smoothstep(0.22, 0.0, d)) * 1.4;
-  col = mix(col, uSeam, step(0.93, vR) * 0.8);
+  vec3 col = mix(vec3(0.78, 0.86, 1.0), vec3(1.0), smoothstep(0.22, 0.0, d)) * 1.3;
+  col = mix(col, uSeam, step(0.86, vR) * 0.85);
   gl_FragColor = vec4(col * a * vA, a * vA);
 }`
 
@@ -118,36 +189,93 @@ void main() {
   vec2 p = (vUv - 0.5) * 2.0; float r = length(p);
   float rim = exp(-pow((r - 0.62) * 40.0, 2.0));
   float ripple = 0.5 + 0.5 * sin(r * 46.0 - uTime * 1.6);
-  float inner = smoothstep(0.62, 0.0, r) * (0.18 + 0.12 * ripple);
-  float glow = exp(-r * r * 6.0) * 0.5;
+  float inner = smoothstep(0.62, 0.0, r) * (0.12 + 0.1 * ripple);
+  float glow = exp(-r * r * 6.0) * 0.4;
   float a = (rim * 0.9 + inner + glow) * smoothstep(1.0, 0.6, r) * (0.25 + 0.75 * min(1.0, uG * 1.4 + 0.1));
   vec3 col = mix(vec3(0.62, 0.74, 1.0), vec3(1.0), rim) + uSeam * glow * 0.6;
   gl_FragColor = vec4(col * a, a);
 }`
 
-function Tree({ grow, inside }) {
-  const { geo, tips, total } = useMemo(buildTree, [])
-  const u = useMemo(() => ({ uG: { value: 0 }, uTip: { value: new THREE.Color('#ffc870') } }), [])
+const TREE = { data: null }
+const treeData = () => (TREE.data ||= buildTree())
+
+function Tree({ grow, inside, low, lang }) {
+  const { geo, tips, twigs, total, top, spread } = treeData()
+  const u = useMemo(() => ({ uG: { value: 0 }, uTime: { value: 0 }, uTip: { value: new THREE.Color('#ffc870') }, uSeam: { value: new THREE.Color('#ffc870') } }), [])
+  const bark = useMemo(barkTexture, [])
   const mat = useMemo(() => {
-    const m = new THREE.MeshStandardMaterial({ color: '#f2f5fc', metalness: 0.2, roughness: 0.35, emissive: '#dfe7ff', emissiveIntensity: 0.8, envMapIntensity: 1.2 })
+    const m = new THREE.MeshStandardMaterial({
+      color: '#eef1f7', map: bark, bumpMap: bark, bumpScale: 3.2, roughness: 0.78, metalness: 0.04,
+      emissive: '#9fb2d8', emissiveIntensity: 0.16, envMapIntensity: 1.1,
+    })
     m.onBeforeCompile = (sh) => {
       sh.uniforms.uG = u.uG; sh.uniforms.uTip = u.uTip
       sh.vertexShader = 'attribute float aT; attribute float aB; attribute float aD; varying float vT; varying float vP; uniform float uG;\n' +
         sh.vertexShader.replace('#include <begin_vertex>', '#include <begin_vertex>\n vT = aT; vP = clamp((uG - aB) / aD, 0.0, 1.0);')
       sh.fragmentShader = 'varying float vT; varying float vP; uniform vec3 uTip;\n' +
         sh.fragmentShader.replace('void main() {', 'void main() {\n if (vT > vP + 0.0001) discard;')
-          .replace('#include <emissivemap_fragment>', '#include <emissivemap_fragment>\n totalEmissiveRadiance += uTip * 2.5 * smoothstep(0.08, 0.0, vP - vT) * step(vP, 0.999);')
+          .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+ totalEmissiveRadiance += uTip * 2.5 * smoothstep(0.08, 0.0, vP - vT) * step(vP, 0.999);
+ float fr = pow(1.0 - abs(dot(normalize(normal), normalize(vViewPosition))), 3.0);
+ totalEmissiveRadiance += vec3(0.72, 0.8, 1.0) * fr * 0.55;`)
+    }
+    return m
+  }, [u, bark])
+
+  // leaves: real blades along every twig, opening as the twig grows past them
+  const leaves = useMemo(() => {
+    const r = rng(5), per = 12, N = twigs.length * per
+    const geo = new THREE.PlaneGeometry(0.105, 0.2); geo.translate(0, 0.1, 0)
+    const aB = new Float32Array(N), aR = new Float32Array(N)
+    const mtx = [], cols = [], m = new THREE.Matrix4(), q = new THREE.Quaternion(), e = new THREE.Euler(), s = new THREE.Vector3()
+    let i = 0
+    for (const tw of twigs) {
+      for (let k = 0; k < per; k++) {
+        const t = 0.3 + 0.7 * r()
+        const p = tw.curve.getPointAt(t)
+        p.x += (r() - 0.5) * 0.16; p.y += (r() - 0.5) * 0.12; p.z += (r() - 0.5) * 0.16
+        e.set(-0.4 + r() * 1.6, r() * 6.283, (r() - 0.5) * 1.8); q.setFromEuler(e); s.setScalar(0.75 + r() * 0.6)
+        m.compose(p, q, s); mtx.push(m.clone())
+        const tone = r()
+        cols.push(tone < 0.07 ? new THREE.Color('#ffe2b0') : tone < 0.45 ? new THREE.Color('#dfe8ff') : new THREE.Color('#ffffff'))
+        aB[i] = tw.birth + (tw.end - tw.birth) * t + 0.25; aR[i] = r(); i++
+      }
+    }
+    geo.setAttribute('aB', new THREE.InstancedBufferAttribute(aB, 1))
+    geo.setAttribute('aR', new THREE.InstancedBufferAttribute(aR, 1))
+    return { geo, mtx, cols, N }
+  }, [twigs])
+  const leafMat = useMemo(() => {
+    const m = new THREE.MeshStandardMaterial({
+      map: leafTexture(), alphaTest: 0.45, side: THREE.DoubleSide, color: '#f6f8ff', emissive: '#c7d6ff', emissiveIntensity: 0.5,
+      roughness: 0.5, metalness: 0.05,
+    })
+    m.onBeforeCompile = (sh) => {
+      sh.uniforms.uG = u.uG; sh.uniforms.uTime = u.uTime
+      sh.vertexShader = 'attribute float aB; attribute float aR; uniform float uG; uniform float uTime;\n' +
+        sh.vertexShader.replace('#include <begin_vertex>', `#include <begin_vertex>
+ float on = smoothstep(aB, aB + 0.7, uG);
+ transformed *= max(on, 0.0001);
+ transformed.x += sin(uTime * 1.4 + aR * 40.0) * 0.08 * position.y;
+ transformed.z += cos(uTime * 1.1 + aR * 23.0) * 0.06 * position.y;`)
     }
     return m
   }, [u])
+  const leafRef = useRef()
+  useEffect(() => {
+    const im = leafRef.current
+    leaves.mtx.forEach((m, i) => { im.setMatrixAt(i, m); im.setColorAt(i, leaves.cols[i]) })
+    im.instanceMatrix.needsUpdate = true
+    if (im.instanceColor) im.instanceColor.needsUpdate = true
+  }, [leaves])
 
-  // the canopy: soft points around every tip, appearing as each tip arrives
-  const leaves = useMemo(() => {
-    const r = rng(5), pos = [], aB = [], aR = []
-    for (const t of tips) {
-      for (let i = 0; i < 70; i++) {
-        const v = new THREE.Vector3(r() - 0.5, (r() - 0.35) * 0.8, r() - 0.5).multiplyScalar(1.7 * Math.sqrt(r()) + 0.15)
-        pos.push(t.p.x + v.x, t.p.y + v.y, t.p.z + v.z); aB.push(t.t + r() * 0.6); aR.push(r())
+  // motes of light in the crown
+  const motes = useMemo(() => {
+    const r = rng(7), pos = [], aB = [], aR = []
+    for (const tw of twigs) {
+      for (let i = 0; i < 4; i++) {
+        const p = tw.curve.getPointAt(r())
+        pos.push(p.x + (r() - 0.5) * 0.9, p.y + (r() - 0.5) * 0.7, p.z + (r() - 0.5) * 0.9); aB.push(tw.end + r() * 0.6); aR.push(r())
       }
     }
     const g = new THREE.BufferGeometry()
@@ -155,77 +283,124 @@ function Tree({ grow, inside }) {
     g.setAttribute('aB', new THREE.Float32BufferAttribute(aB, 1))
     g.setAttribute('aR', new THREE.Float32BufferAttribute(aR, 1))
     return g
+  }, [twigs])
+  const moteMat = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: { uG: u.uG, uTime: u.uTime, uSize: { value: 0.8 }, uSeam: u.uSeam }, vertexShader: leafVert, fragmentShader: leafFrag,
+    transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  }), [u])
+
+  // the multiverse: universes hanging from the crown, each its own galaxy in a bubble
+  const uniMat = useMemo(universeMaterial, [])
+  const uniGeo = useMemo(() => new THREE.SphereGeometry(1, 32, 24), [])
+  const spots = useMemo(() => {
+    const r = rng(17), out = []
+    tips.forEach((t, i) => {
+      if (i % 9 !== 4) return
+      out.push({ p: t.p.clone().add(new THREE.Vector3(0, -0.28 - r() * 0.2, 0)), r: 0.2 + r() * 0.24, b: t.t + 0.5 })
+    })
+    return out
   }, [tips])
-  const lu = useMemo(() => ({ uG: u.uG, uTime: { value: 0 }, uSize: { value: 1.05 }, uSeam: { value: new THREE.Color('#ffc870') } }), [u])
+  const uniRef = useRef()
+  useEffect(() => { placeUniverses(uniRef.current, spots, 31) }, [spots])
+  const threads = useMemo(() => {
+    const pos = []
+    spots.forEach((s) => { pos.push(s.p.x, s.p.y + s.r, s.p.z, s.p.x, s.p.y + s.r + 0.3, s.p.z) })
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); return g
+  }, [spots])
+
+  // the crown's name, on a ring of light above it
+  const band = useMemo(() => textBand(lang === 'ru' ? 'ДРЕВО МУЛЬТИВСЕЛЕННОЙ   ·   混沌   ·   ' : 'THE TREE OF THE MULTIVERSE   ·   混沌   ·   ', { spacing: 26 }), [lang])
+  const ring = useRef(), ringMat = useRef(), hoop = useRef()
+  const ringR = Math.max(3.4, spread * 1.02)
 
   // petals drifting down once the canopy is full
   const petals = useMemo(() => {
-    const r = rng(9), N = 380, pos = new Float32Array(N * 3), seed = new Float32Array(N)
-    for (let i = 0; i < N; i++) { pos[i * 3] = (r() - 0.5) * 9; pos[i * 3 + 1] = 4 + r() * 6; pos[i * 3 + 2] = (r() - 0.5) * 9; seed[i] = r() }
+    const r = rng(9), N = 260, pos = new Float32Array(N * 3), seed = new Float32Array(N)
+    for (let i = 0; i < N; i++) { pos[i * 3] = (r() - 0.5) * spread * 1.6; pos[i * 3 + 1] = 2 + r() * top; pos[i * 3 + 2] = (r() - 0.5) * spread * 1.6; seed[i] = r() }
     const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); return { g, seed, N }
-  }, [])
-  const pm = useRef()
-  const pu = useMemo(() => ({ uTime: { value: 0 }, uSeam: { value: new THREE.Color('#ffc870') } }), [])
+  }, [spread, top])
+  const pm = useRef(), rim = useRef()
+  const poolMat = useMemo(() => new THREE.ShaderMaterial({
+    uniforms: { uTime: u.uTime, uG: u.uG, uSeam: u.uSeam },
+    vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
+    fragmentShader: poolFrag, transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
+  }), [u])
 
-  const grp = useRef(), leafMat = useRef(), poolMat = useRef()
+  const grp = useRef()
   useFrame((st, dt) => {
     const t = st.clock.elapsedTime
     u.uG.value = grow.current * (total + 1)
-    lu.uTime.value = t
-    pu.uTime.value = t
-    // R3F hands materials their own copy of the uniforms object, so set the live values on the materials
-    for (const m of [leafMat.current, poolMat.current]) {
-      if (!m) continue
-      m.uniforms.uG.value = u.uG.value
-      m.uniforms.uTime.value = t
-      m.uniforms.uSeam.value.copy(lu.uSeam.value)
-    }
-    moodLerp(u.uTip.value, 'seam', 0.05); moodLerp(lu.uSeam.value, 'seam', 0.05); moodLerp(pu.uSeam.value, 'seam', 0.05)
-    const full = THREE.MathUtils.clamp((grow.current - 0.85) / 0.15, 0, 1)
-    pm.current.opacity = full * 0.85
+    u.uTime.value = t
+    uniMat.uniforms.uG.value = u.uG.value
+    uniMat.uniforms.uTime.value = t
+    moodLerp(u.uTip.value, 'seam', 0.05); moodLerp(u.uSeam.value, 'seam', 0.05); uniMat.uniforms.uSeam.value.copy(u.uSeam.value)
+    const full = THREE.MathUtils.clamp((grow.current - 0.82) / 0.18, 0, 1)
+    pm.current.opacity = full * 0.7
+    ringMat.current.opacity = full
+    hoop.current.material.opacity = full * 0.5
+    ring.current.rotation.y -= dt * 0.05
     if (full > 0) {
       const a = petals.g.attributes.position.array
       for (let i = 0; i < petals.N; i++) {
         a[i * 3 + 1] -= dt * (0.25 + petals.seed[i] * 0.35)
         a[i * 3] += Math.sin(t * 0.7 + petals.seed[i] * 30) * dt * 0.2
-        if (a[i * 3 + 1] < 0.05) { a[i * 3 + 1] = 6 + petals.seed[i] * 4; a[i * 3] = (Math.random() - 0.5) * 8; a[i * 3 + 2] = (Math.random() - 0.5) * 8 }
+        if (a[i * 3 + 1] < 0.05) { a[i * 3 + 1] = top * (0.6 + petals.seed[i] * 0.4); a[i * 3] = (Math.random() - 0.5) * spread * 1.4; a[i * 3 + 2] = (Math.random() - 0.5) * spread * 1.4 }
       }
       petals.g.attributes.position.needsUpdate = true
     }
+    // the rim light always sits behind the tree, as seen from the camera
+    rim.current.position.set(-st.camera.position.x, 9, -st.camera.position.z)
     grp.current.visible = !inside.current
   })
   return (
     <group ref={grp}>
+      <directionalLight ref={rim} intensity={2.4} color="#dfe8ff" />
+      <pointLight position={[0, top * 0.72, 0]} intensity={36} distance={top * 1.6} color="#e9efff" />
       <mesh geometry={geo} material={mat} />
-      <points geometry={leaves} frustumCulled={false}>
-        <shaderMaterial ref={leafMat} vertexShader={leafVert} fragmentShader={leafFrag} uniforms={lu} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
-      </points>
+      <instancedMesh ref={leafRef} args={[leaves.geo, leafMat, leaves.N]} frustumCulled={false} />
+      <points geometry={motes} material={moteMat} frustumCulled={false} />
+      <instancedMesh ref={uniRef} args={[uniGeo, uniMat, spots.length]} frustumCulled={false} />
+      <lineSegments geometry={threads}>
+        <lineBasicMaterial color="#cfd9f2" transparent opacity={0.35} />
+      </lineSegments>
+      <group ref={ring} position={[0, top * 0.64, 0]}>
+        <mesh>
+          <cylinderGeometry args={[ringR, ringR, 0.72, 200, 1, true]} />
+          <meshBasicMaterial ref={ringMat} map={band} transparent opacity={0} depthWrite={false} side={THREE.FrontSide} toneMapped={false} />
+        </mesh>
+        <mesh ref={hoop} rotation={[Math.PI / 2, 0, 0]} position={[0, -0.5, 0]}>
+          <torusGeometry args={[ringR, 0.006, 6, 200]} />
+          <meshBasicMaterial color="#ffffff" transparent opacity={0} toneMapped={false} />
+        </mesh>
+      </group>
       <points geometry={petals.g} frustumCulled={false}>
-        <pointsMaterial ref={pm} size={0.06} color="#eaf2ff" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial ref={pm} size={0.05} color="#eaf2ff" transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.012, 0]} material={poolMat}>
         <planeGeometry args={[11, 11]} />
-        <shaderMaterial ref={poolMat} vertexShader="varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }"
-          fragmentShader={poolFrag} uniforms={{ uTime: lu.uTime, uG: u.uG, uSeam: lu.uSeam }} transparent depthWrite={false} blending={THREE.AdditiveBlending} />
       </mesh>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <circleGeometry args={[60, 64]} />
-        <meshStandardMaterial color="#05060a" roughness={0.15} metalness={0.6} />
+        <circleGeometry args={[70, 64]} />
+        {low
+          ? <meshStandardMaterial color="#05060a" roughness={0.2} metalness={0.6} />
+          : <MeshReflectorMaterial blur={[300, 80]} resolution={512} mixBlur={1} mixStrength={18} roughness={0.9} depthScale={1.1} minDepthThreshold={0.3} maxDepthThreshold={1.4} color="#06070b" metalness={0.6} mirror={0.5} />}
       </mesh>
     </group>
   )
 }
 
-// ---------- inside: threads of possibility branching out from a centre, thousands of worlds on them ----------
+// ---------- inside: threads of possibility, and on them the universes ----------
 function Inside({ inside }) {
-  const geo = useMemo(() => {
-    const r = rng(23), pos = [], col = [], c = new THREE.Color()
+  const { geo, spots } = useMemo(() => {
+    const r = rng(23), pos = [], col = [], c = new THREE.Color(), spots = []
+    let n0 = 0
     const walk = (p, d, n, depth) => {
       for (let i = 0; i < n; i++) {
         d.add(new THREE.Vector3((r() - 0.5) * 0.4, (r() - 0.5) * 0.4, (r() - 0.5) * 0.4)).normalize()
         p = p.clone().addScaledVector(d, 0.09)
         pos.push(p.x, p.y, p.z)
-        c.setHSL(0.6 + (r() - 0.5) * 0.08, 0.35, 0.65 + r() * 0.3); col.push(c.r, c.g, c.b)
+        c.setHSL(0.6 + (r() - 0.5) * 0.08, 0.3, 0.5 + r() * 0.25); col.push(c.r, c.g, c.b)
+        if (++n0 % 11 === 0) spots.push({ p: p.clone(), r: 0.025 + r() * 0.06, b: 0 })
         if (depth < 4 && r() < 0.035) walk(p.clone(), d.clone().add(new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5)).normalize(), Math.floor(n * 0.7), depth + 1)
       }
     }
@@ -233,19 +408,19 @@ function Inside({ inside }) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
-    return g
+    return { geo: g, spots }
   }, [])
-  const dot = useMemo(() => {
-    const c = document.createElement('canvas'); c.width = c.height = 64
-    const x = c.getContext('2d'), gr = x.createRadialGradient(32, 32, 0, 32, 32, 32)
-    gr.addColorStop(0, '#fff'); gr.addColorStop(0.25, 'rgba(255,255,255,.8)'); gr.addColorStop(1, 'rgba(255,255,255,0)')
-    x.fillStyle = gr; x.fillRect(0, 0, 64, 64)
-    return new THREE.CanvasTexture(c)
-  }, [])
+  const dot = useMemo(dotTexture, [])
+  const uniMat = useMemo(universeMaterial, [])
+  const uniGeo = useMemo(() => new THREE.SphereGeometry(1, 24, 16), [])
+  const uni = useRef()
+  useEffect(() => { placeUniverses(uni.current, spots, 41); uniMat.uniforms.uG.value = 1 }, [spots, uniMat])
   const g = useRef(), m = useRef()
   useFrame((st, dt) => {
     const want = inside.current ? 1 : 0
-    m.current.opacity += (want - m.current.opacity) * Math.min(1, dt * 1.5)
+    m.current.opacity += (want * 0.7 - m.current.opacity) * Math.min(1, dt * 1.5)
+    uniMat.uniforms.uAlpha.value = m.current.opacity / 0.7
+    uniMat.uniforms.uTime.value = st.clock.elapsedTime
     g.current.visible = m.current.opacity > 0.01
     g.current.rotation.y += dt * 0.04
     g.current.rotation.x = Math.sin(st.clock.elapsedTime * 0.1) * 0.2
@@ -253,14 +428,16 @@ function Inside({ inside }) {
   return (
     <group ref={g} position={[0, 3, 0]}>
       <points geometry={geo}>
-        <pointsMaterial ref={m} size={0.05} map={dot} alphaMap={dot} vertexColors transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial ref={m} size={0.035} map={dot} alphaMap={dot} vertexColors transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
+      <instancedMesh ref={uni} args={[uniGeo, uniMat, spots.length]} frustumCulled={false} />
     </group>
   )
 }
 
 function Rig({ prog, inside }) {
   const look = useMemo(() => new THREE.Vector3(0, 1, 0), [])
+  const off = useRef(0)
   useFrame((st, dt) => {
     const c = st.camera, p = prog.current, k = Math.min(1, dt * 2)
     let x, y, z, ly
@@ -273,14 +450,21 @@ function Rig({ prog, inside }) {
       const a = -0.2 + p * 1.6 + bus.mouse.x * 0.15
       // portrait screens are narrow: stand further back so the canopy fits across
       const wide = Math.min(1.6, Math.max(1, 1.25 / (st.size.width / st.size.height)))
-      const R = THREE.MathUtils.lerp(7, 23, g) * wide
+      const { top, spread } = treeData()
+      const R = THREE.MathUtils.lerp(7, Math.max(spread, top * 0.8) * 2.2, g) * wide
       x = Math.sin(a) * R; z = Math.cos(a) * R
-      y = THREE.MathUtils.lerp(1.0, 5.2, g) + bus.mouse.y * 0.4
-      ly = THREE.MathUtils.lerp(0.6, 7.3, g)
+      y = THREE.MathUtils.lerp(1.0, top * 0.45, g) + bus.mouse.y * 0.4
+      ly = THREE.MathUtils.lerp(0.6, top * 0.7, g)
     }
     c.position.x += (x - c.position.x) * k; c.position.y += (y - c.position.y) * k; c.position.z += (z - c.position.z) * k
     look.y += (ly - look.y) * k
     c.lookAt(0, look.y, 0)
+    // on wide screens slide the grown tree right, so the reading on the left has its own space
+    const { width: W, height: Hh } = st.size
+    const want = !inside.current && p > 0.8 && W / Hh > 1.15 ? -0.13 * W : 0
+    off.current += (want - off.current) * k
+    if (Math.abs(off.current) > 0.5) c.setViewOffset(W, Hh, off.current, 0, W, Hh)
+    else if (c.view?.enabled) c.clearViewOffset()
   })
   return null
 }
@@ -329,11 +513,11 @@ export default function Chaos({ go }) {
           onCreated={({ scene }) => { scene.fog = new THREE.FogExp2('#020205', 0.022); scene.background = new THREE.Color('#010103') }}>
           <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setLow(true)} flipflops={2} />
           <Suspense fallback={null}><Environment files={studio} environmentIntensity={0.35} /></Suspense>
-          <directionalLight position={[-4, 9, 5]} intensity={0.9} color="#cfdcff" />
-          <pointLight position={[0, 8, 0]} intensity={40} distance={20} color="#dfe8ff" />
-          <Tree grow={grow} inside={inside} />
+          <directionalLight position={[-4, 9, 5]} intensity={0.7} color="#cfdcff" />
+          <hemisphereLight args={['#cdd8f5', '#05060a', 0.35]} />
+          <Tree grow={grow} inside={inside} low={low} lang={lang} />
           <Inside inside={inside} />
-          <Sparkles count={160} scale={[16, 10, 16]} position={[0, 4, 0]} size={2.2} speed={0.25} opacity={0.5} color="#dfe8ff" />
+          <Sparkles count={160} scale={[22, 14, 22]} position={[0, 6, 0]} size={2.2} speed={0.25} opacity={0.5} color="#dfe8ff" />
           <Rig prog={prog} inside={inside} />
           {!low && (
             <EffectComposer multisampling={0}>
@@ -353,7 +537,11 @@ export default function Chaos({ go }) {
                 <p className="descent-hint">{T.void} <span>↓</span></p>
               </div>
               <p className="chaos-whisper" style={{ opacity: vis(0.12, 0.04) }}>{T.grow}</p>
-              <p className="chaos-name" style={{ opacity: Math.min(1, Math.max(0, (p - 0.3) / 0.1)) * (isIn ? 0 : 1) }}>{T.bough}</p>
+              <p className="chaos-name" style={{ opacity: Math.min(1, Math.max(0, (p - 0.3) / 0.1)) * Math.max(0, 1 - (p - 0.7) / 0.06) }}>{T.bough}</p>
+              <div className="chaos-crown" style={{ opacity: Math.max(0, Math.min(1, (p - 0.76) / 0.08)) }}>
+                <p className="sec-group" lang="zh-Hant">{T.crownEyebrow}</p>
+                <h2><span>{T.crown[0]}</span> <i>{T.crown[1]}</i></h2>
+              </div>
               {CHAOS_LINES.map((l, i) => {
                 const o = vis(at(i))
                 if (o <= 0) return null
@@ -368,7 +556,10 @@ export default function Chaos({ go }) {
               <div className="chaos-end" style={{ opacity: Math.max(0, Math.min(1, (p - 0.84) / 0.06)), pointerEvents: p > 0.86 ? 'auto' : 'none' }}>
                 <p className="sec-group">{T.readTitle}</p>
                 <p className="chaos-read">{T.read}</p>
-                <button className="hero-enter" onClick={enter}>{T.enter} →</button>
+                <div className="chaos-actions">
+                  <button className="hero-enter" onClick={enter}>{T.enter} →</button>
+                  <button className="crumb" onClick={() => go('aleph')}>{T.below} ↓</button>
+                </div>
               </div>
             </>
           )}
@@ -380,6 +571,7 @@ export default function Chaos({ go }) {
                 <p className="chaos-note">{T.reading}</p>
                 <div className="chaos-actions">
                   <button className="hero-enter" onClick={leave}>← {T.back}</button>
+                  <button className="crumb" onClick={() => go('aleph')}>{T.below} ↓</button>
                   <button className="crumb" onClick={() => go('map')}>{T.up}</button>
                 </div>
               </motion.div>

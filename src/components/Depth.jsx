@@ -4,10 +4,11 @@ import { usePack } from '../lang'
 const STOPS = [
   { id: 'intro', en: 'Surface', ru: 'Поверхность' },
   { id: 'map', en: 'The Mark', ru: 'Метка' },
-  { id: 'verdict', en: 'The dossier', ru: 'Досье', match: (v) => !['intro', 'map', 'inner', 'descent', 'chaos', 'chain'].includes(v) && !v.startsWith('c-') },
+  { id: 'verdict', en: 'The dossier', ru: 'Досье', match: (v) => !['intro', 'map', 'inner', 'descent', 'chaos', 'aleph', 'chain'].includes(v) && !v.startsWith('c-') },
   { id: 'inner', en: 'Inner layer', ru: 'Внутренний слой', match: (v) => v === 'inner' || v.startsWith('c-') },
   { id: 'descent', en: 'The descent', ru: 'Спуск' },
   { id: 'chaos', en: 'Chaos', ru: 'Хаос' },
+  { id: 'aleph', en: 'Aleph-1', ru: 'Алеф-1' },
 ]
 
 export default function Depth({ view, go }) {

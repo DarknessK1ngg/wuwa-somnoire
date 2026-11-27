@@ -14,6 +14,7 @@ import Search, { SearchButton } from './components/Search'
 import Chain from './components/Chain'
 import Descent from './components/Descent'
 import Chaos from './components/Chaos'
+import Aleph from './components/Aleph'
 import Film, { FILM_KEY } from './components/Film'
 import Depth from './components/Depth'
 import Stars from './components/Stars'
@@ -28,7 +29,7 @@ import { useSettings } from './settings'
 
 const parse = () => {
   const h = decodeURIComponent(location.hash.slice(1))
-  if (h === 'map' || h === 'inner' || h === 'chain' || h === 'descent' || h === 'chaos') return h
+  if (h === 'map' || h === 'inner' || h === 'chain' || h === 'descent' || h === 'chaos' || h === 'aleph') return h
   if (h.startsWith('c-') && CHARACTERS.some((c) => `c-${c.id}` === h)) return h
   if (SECTIONS.some((s) => s.id === h)) return h
   return 'intro'
@@ -155,7 +156,8 @@ export default function App() {
           {view === 'chain' && <Chain key={`chain-${site}`} go={go} />}
           {view === 'descent' && <Descent key={`descent-${site}`} go={go} />}
           {view === 'chaos' && <Chaos key={`chaos-${site}`} go={go} />}
-          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && view !== 'descent' && view !== 'chaos' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
+          {view === 'aleph' && <Aleph key={`aleph-${site}`} go={go} />}
+          {view !== 'intro' && view !== 'map' && view !== 'inner' && view !== 'chain' && view !== 'descent' && view !== 'chaos' && view !== 'aleph' && !view.startsWith('c-') && <Section key={`${site}-${view}`} id={view} go={go} settings={settings} />}
         </AnimatePresence>
       </main>
 

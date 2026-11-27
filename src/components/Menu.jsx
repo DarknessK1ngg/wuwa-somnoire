@@ -63,6 +63,9 @@ export default function Menu({ open, view, go, settings, switchSite, playFilm })
                   <motion.button variants={item} className={`menu-home ${view === 'chaos' ? 'on' : ''}`} onClick={() => go('chaos')}>
                     <span>✳</span> {UI.lang === 'ru' ? 'Хаос · 混沌' : 'Chaos · 混沌'}
                   </motion.button>
+                  <motion.button variants={item} className={`menu-home ${view === 'aleph' ? 'on' : ''}`} onClick={() => go('aleph')}>
+                    <span>●</span> {UI.lang === 'ru' ? 'Алеф-1 · 阿列夫一' : 'Aleph-1 · 阿列夫一'}
+                  </motion.button>
                   <motion.button variants={item} className="menu-home" onClick={playFilm}>
                     <span>▸</span> {UI.lang === 'ru' ? 'Вступительный фильм' : 'Opening film'}
                   </motion.button>
