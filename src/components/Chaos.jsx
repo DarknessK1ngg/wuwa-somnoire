@@ -9,7 +9,9 @@ import studio from '@pmndrs/assets/hdri/studio.exr.js'
 import { usePack } from '../lang'
 import { bus, moodLerp } from '../bus'
 import { CHAOS_LINES, CHAOS_TXT } from '../chaos'
-import { rng, dotTexture, universeMaterial, placeUniverses, textBand } from '../cosmos'
+import { rng, dotTexture, textBand } from '../cosmos'
+import { seedSpots, axisOf, KIND_NAME } from '../universes'
+import Universes from './Universes'
 
 // ---------- the tree: one trunk with roots, a crown of ever finer branches, grown by a uniform ----------
 function buildTree() {
@@ -196,10 +198,19 @@ void main() {
   gl_FragColor = vec4(col * a, a);
 }`
 
-const TREE = { data: null }
+const TREE = { data: null, fruit: null }
 const treeData = () => (TREE.data ||= buildTree())
+const fruitSpots = () => {
+  if (TREE.fruit) return TREE.fruit
+  const r = rng(17), out = []
+  treeData().tips.forEach((t, i) => {
+    if (i % 9 !== 4) return
+    out.push({ p: t.p.clone().add(new THREE.Vector3(0, -0.28 - r() * 0.2, 0)), r: 0.2 + r() * 0.24, b: t.t + 0.5 })
+  })
+  return (TREE.fruit = seedSpots(out, 61))
+}
 
-function Tree({ grow, inside, low, lang }) {
+function Tree({ grow, inside, low, lang, pointer }) {
   const { geo, tips, twigs, total, top, spread } = treeData()
   const u = useMemo(() => ({ uG: { value: 0 }, uTime: { value: 0 }, uTip: { value: new THREE.Color('#ffc870') }, uSeam: { value: new THREE.Color('#ffc870') } }), [])
   const bark = useMemo(barkTexture, [])
@@ -289,19 +300,9 @@ function Tree({ grow, inside, low, lang }) {
     transparent: true, depthWrite: false, blending: THREE.AdditiveBlending,
   }), [u])
 
-  // the multiverse: universes hanging from the crown, each its own galaxy in a bubble
-  const uniMat = useMemo(universeMaterial, [])
-  const uniGeo = useMemo(() => new THREE.SphereGeometry(1, 32, 24), [])
-  const spots = useMemo(() => {
-    const r = rng(17), out = []
-    tips.forEach((t, i) => {
-      if (i % 9 !== 4) return
-      out.push({ p: t.p.clone().add(new THREE.Vector3(0, -0.28 - r() * 0.2, 0)), r: 0.2 + r() * 0.24, b: t.t + 0.5 })
-    })
-    return out
-  }, [tips])
-  const uniRef = useRef()
-  useEffect(() => { placeUniverses(uniRef.current, spots, 31) }, [spots])
+  // the multiverse: universes hanging from the crown, each a galaxy of real stars in a glass bubble
+  const spots = fruitSpots()
+  const fctl = useRef({ g: 0, alpha: 1, hover: -1, skip: -1 })
   const threads = useMemo(() => {
     const pos = []
     spots.forEach((s) => { pos.push(s.p.x, s.p.y + s.r, s.p.z, s.p.x, s.p.y + s.r + 0.3, s.p.z) })
@@ -331,9 +332,8 @@ function Tree({ grow, inside, low, lang }) {
     const t = st.clock.elapsedTime
     u.uG.value = grow.current * (total + 1)
     u.uTime.value = t
-    uniMat.uniforms.uG.value = u.uG.value
-    uniMat.uniforms.uTime.value = t
-    moodLerp(u.uTip.value, 'seam', 0.05); moodLerp(u.uSeam.value, 'seam', 0.05); uniMat.uniforms.uSeam.value.copy(u.uSeam.value)
+    Object.assign(fctl.current, { g: u.uG.value, hover: pointer.current.hover, skip: pointer.current.focus })
+    moodLerp(u.uTip.value, 'seam', 0.05); moodLerp(u.uSeam.value, 'seam', 0.05)
     const full = THREE.MathUtils.clamp((grow.current - 0.82) / 0.18, 0, 1)
     pm.current.opacity = full * 0.7
     ringMat.current.opacity = full
@@ -359,7 +359,8 @@ function Tree({ grow, inside, low, lang }) {
       <mesh geometry={geo} material={mat} />
       <instancedMesh ref={leafRef} args={[leaves.geo, leafMat, leaves.N]} frustumCulled={false} />
       <points geometry={motes} material={moteMat} frustumCulled={false} />
-      <instancedMesh ref={uniRef} args={[uniGeo, uniMat, spots.length]} frustumCulled={false} />
+      <Universes spots={spots} per={low ? 160 : 280} ctl={fctl} seed={21} size={0.12}
+        onHover={(k, e) => pointer.current.onHover?.(k, e)} onPick={(k) => pointer.current.onPick?.(k)} />
       <lineSegments geometry={threads}>
         <lineBasicMaterial color="#cfd9f2" transparent opacity={0.35} />
       </lineSegments>
@@ -400,7 +401,7 @@ function Inside({ inside }) {
         p = p.clone().addScaledVector(d, 0.09)
         pos.push(p.x, p.y, p.z)
         c.setHSL(0.6 + (r() - 0.5) * 0.08, 0.3, 0.5 + r() * 0.25); col.push(c.r, c.g, c.b)
-        if (++n0 % 11 === 0) spots.push({ p: p.clone(), r: 0.025 + r() * 0.06, b: 0 })
+        if (++n0 % 11 === 0) spots.push({ p: p.clone(), r: 0.03 + r() * 0.07, b: 0 })
         if (depth < 4 && r() < 0.035) walk(p.clone(), d.clone().add(new THREE.Vector3(r() - 0.5, r() - 0.5, r() - 0.5)).normalize(), Math.floor(n * 0.7), depth + 1)
       }
     }
@@ -408,19 +409,15 @@ function Inside({ inside }) {
     const g = new THREE.BufferGeometry()
     g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3))
     g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3))
-    return { geo: g, spots }
+    return { geo: g, spots: seedSpots(spots, 71) }
   }, [])
   const dot = useMemo(dotTexture, [])
-  const uniMat = useMemo(universeMaterial, [])
-  const uniGeo = useMemo(() => new THREE.SphereGeometry(1, 24, 16), [])
-  const uni = useRef()
-  useEffect(() => { placeUniverses(uni.current, spots, 41); uniMat.uniforms.uG.value = 1 }, [spots, uniMat])
+  const uctl = useRef({ g: 1, alpha: 0 })
   const g = useRef(), m = useRef()
   useFrame((st, dt) => {
     const want = inside.current ? 1 : 0
-    m.current.opacity += (want * 0.7 - m.current.opacity) * Math.min(1, dt * 1.5)
-    uniMat.uniforms.uAlpha.value = m.current.opacity / 0.7
-    uniMat.uniforms.uTime.value = st.clock.elapsedTime
+    m.current.opacity += (want * 0.5 - m.current.opacity) * Math.min(1, dt * 1.5)
+    uctl.current.alpha = m.current.opacity / 0.5
     g.current.visible = m.current.opacity > 0.01
     g.current.rotation.y += dt * 0.04
     g.current.rotation.x = Math.sin(st.clock.elapsedTime * 0.1) * 0.2
@@ -428,19 +425,44 @@ function Inside({ inside }) {
   return (
     <group ref={g} position={[0, 3, 0]}>
       <points geometry={geo}>
-        <pointsMaterial ref={m} size={0.035} map={dot} alphaMap={dot} vertexColors transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
+        <pointsMaterial ref={m} size={0.03} map={dot} alphaMap={dot} vertexColors transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} />
       </points>
-      <instancedMesh ref={uni} args={[uniGeo, uniMat, spots.length]} frustumCulled={false} />
+      <Universes spots={spots} per={50} ctl={uctl} seed={41} size={0.16} />
     </group>
   )
 }
 
-function Rig({ prog, inside }) {
+// the universe you clicked, drawn in full: stand inside its bubble, above its galaxy
+function Focus({ pointer }) {
+  const [k, setK] = useState(-1)
+  useFrame(() => { if (pointer.current.focus !== k) setK(pointer.current.focus) })
+  const spot = k >= 0 ? fruitSpots()[k] : null
+  const detail = useMemo(() => (spot ? [{ ...spot, gr: spot.r * 0.34, stars: 1, b: 0 }] : []), [spot])
+  const dctl = useRef({ g: 1, alpha: 1 })
+  if (!spot) return null
+  return <Universes key={k} spots={detail} per={spot.kind === 3 ? 12000 : 9000} ctl={dctl} seed={k + 3} shells={false} size={0.009} />
+}
+
+function Rig({ prog, inside, pointer }) {
   const look = useMemo(() => new THREE.Vector3(0, 1, 0), [])
   const off = useRef(0)
+  const at = useMemo(() => new THREE.Vector3(), [])
   useFrame((st, dt) => {
     const c = st.camera, p = prog.current, k = Math.min(1, dt * 2)
     let x, y, z, ly
+    const f = pointer.current.focus
+    if (f >= 0) {
+      // fly into the universe: above its galaxy, looking at its core
+      const s = fruitSpots()[f], { n } = axisOf(s.seed)
+      at.copy(s.p).addScaledVector(n, s.r * 0.86)
+      const kk = Math.min(1, dt * 1.6)
+      c.position.lerp(at, kk)
+      look.lerp(s.p, kk)
+      c.lookAt(look)
+      if (c.view?.enabled) c.clearViewOffset()
+      off.current = 0
+      return
+    }
     if (inside.current) {
       // drift inside the field
       const t = st.clock.elapsedTime * 0.05
@@ -457,8 +479,9 @@ function Rig({ prog, inside }) {
       ly = THREE.MathUtils.lerp(0.6, top * 0.7, g)
     }
     c.position.x += (x - c.position.x) * k; c.position.y += (y - c.position.y) * k; c.position.z += (z - c.position.z) * k
+    look.x += (0 - look.x) * k; look.z += (0 - look.z) * k
     look.y += (ly - look.y) * k
-    c.lookAt(0, look.y, 0)
+    c.lookAt(look)
     // on wide screens slide the grown tree right, so the reading on the left has its own space
     const { width: W, height: Hh } = st.size
     const want = !inside.current && p > 0.8 && W / Hh > 1.15 ? -0.13 * W : 0
@@ -479,6 +502,29 @@ export default function Chaos({ go }) {
   const [flash, setFlash] = useState(0)
   const [low, setLow] = useState(false)
   const [born] = useState(() => performance.now())
+  // pointing at the universes on the tree, and flying into one
+  const pointer = useRef({ hover: -1, focus: -1 })
+  const [hover, setHover] = useState(null)
+  const [focus, setFocus] = useState(-1)
+  pointer.current.onHover = (k, e) => {
+    const ok = k >= 0 && grow.current > 0.92 && !inside.current && pointer.current.focus < 0
+    pointer.current.hover = ok ? k : -1
+    document.body.style.cursor = ok ? 'pointer' : ''
+    setHover(ok ? { k, x: e?.nativeEvent?.clientX ?? 0, y: e?.nativeEvent?.clientY ?? 0 } : null)
+  }
+  pointer.current.onPick = (k) => {
+    if (k < 0 || grow.current < 0.92 || inside.current || pointer.current.focus >= 0) return
+    bus.sfx('plunge')
+    pointer.current.focus = k; pointer.current.hover = -1
+    document.body.style.cursor = ''
+    setHover(null); setFocus(k)
+  }
+  const unfocus = () => { if (pointer.current.focus < 0) return; bus.sfx('iris'); pointer.current.focus = -1; setFocus(-1) }
+  useEffect(() => {
+    const key = (e) => { if (e.key === 'Escape') unfocus() }
+    addEventListener('keydown', key)
+    return () => { removeEventListener('keydown', key); document.body.style.cursor = '' }
+  }, [])
 
   useEffect(() => {
     let raf
@@ -509,16 +555,17 @@ export default function Chaos({ go }) {
   return (
     <motion.section className="descent chaos" style={{ height: '900vh' }} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.8 }}>
       <div className="descent-stage">
-        <Canvas dpr={low ? 1 : [1, 1.75]} camera={{ fov: 42, position: [0, 1, 7], near: 0.05, far: 200 }} gl={{ antialias: true, powerPreference: 'high-performance' }}
+        <Canvas dpr={low ? 1 : [1, 1.75]} camera={{ fov: 42, position: [0, 1, 7], near: 0.02, far: 200 }} gl={{ antialias: true, powerPreference: 'high-performance' }}
           onCreated={({ scene }) => { scene.fog = new THREE.FogExp2('#020205', 0.022); scene.background = new THREE.Color('#010103') }}>
           <PerformanceMonitor onDecline={() => performance.now() - born > 3000 && setLow(true)} flipflops={2} />
           <Suspense fallback={null}><Environment files={studio} environmentIntensity={0.35} /></Suspense>
           <directionalLight position={[-4, 9, 5]} intensity={0.7} color="#cfdcff" />
           <hemisphereLight args={['#cdd8f5', '#05060a', 0.35]} />
-          <Tree grow={grow} inside={inside} low={low} lang={lang} />
+          <Tree grow={grow} inside={inside} low={low} lang={lang} pointer={pointer} />
+          <Focus pointer={pointer} />
           <Inside inside={inside} />
           <Sparkles count={160} scale={[22, 14, 22]} position={[0, 6, 0]} size={2.2} speed={0.25} opacity={0.5} color="#dfe8ff" />
-          <Rig prog={prog} inside={inside} />
+          <Rig prog={prog} inside={inside} pointer={pointer} />
           {!low && (
             <EffectComposer multisampling={0}>
               <Bloom intensity={1.1} luminanceThreshold={0.45} mipmapBlur />
@@ -529,7 +576,7 @@ export default function Chaos({ go }) {
         </Canvas>
 
         <div className="descent-ui chaos-ui">
-          {!isIn && (
+          {!isIn && focus < 0 && (
             <>
               <div className="descent-intro" style={{ opacity: Math.max(0, 1 - p / 0.1) }}>
                 <p className="sec-group">{T.eyebrow}</p>
@@ -577,6 +624,19 @@ export default function Chaos({ go }) {
               </motion.div>
             )}
           </AnimatePresence>
+          <AnimatePresence>
+            {focus >= 0 && (
+              <motion.div key="uni" className="chaos-inside chaos-uni" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1, delay: 0.6 }}>
+                <p className="sec-group">{T.uniEyebrow}</p>
+                <h3 className="descent-title"><span>{T.uniTitle} № {String(focus + 1).padStart(3, '0')}</span><i>{KIND_NAME[lang][fruitSpots()[focus].kind]}</i></h3>
+                <p className="chaos-read">{T.uniText}</p>
+                <div className="chaos-actions">
+                  <button className="hero-enter" onClick={unfocus}>← {T.uniBack}</button>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+          {hover && <p className="uni-tip" style={{ left: hover.x + 16, top: hover.y + 14 }}>{T.uniTitle} № {String(hover.k + 1).padStart(3, '0')} · {KIND_NAME[lang][fruitSpots()[hover.k].kind]}<span>{T.uniHint}</span></p>}
           <div className="descent-rail" aria-hidden="true">
             <span style={{ transform: `scaleY(${Math.min(1, p)})` }} />
           </div>

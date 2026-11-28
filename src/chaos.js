@@ -80,6 +80,9 @@ export const CHAOS_TXT = {
     up: 'Up to the map',
     crownEyebrow: 'Chaos · 混沌', crown: ['The tree of the', 'multiverse'],
     below: 'Below: Aleph-1',
+    uniEyebrow: 'A universe on the tree', uniTitle: 'Universe', uniHint: 'click to step inside',
+    uniText: 'One of the countless universes on the branches of Chaos: a galaxy of its own, sealed in its bubble. Every fruit on the tree is one of these.',
+    uniBack: 'Back to the tree',
   },
   ru: {
     eyebrow: 'Ниже последнего слоя', title: ['Хаос', '混沌'], void: 'Под спуском нет ничего. Листай дальше.',
@@ -94,5 +97,8 @@ export const CHAOS_TXT = {
     up: 'Наверх, к карте',
     crownEyebrow: 'Хаос · 混沌', crown: ['Древо', 'мультивселенной'],
     below: 'Ниже — Алеф-1',
+    uniEyebrow: 'Вселенная на дереве', uniTitle: 'Вселенная', uniHint: 'нажми, чтобы войти',
+    uniText: 'Одна из бесконечного множества вселенных на ветвях Хаоса: своя галактика, запечатанная в своём пузыре. Каждый плод на дереве — такая вселенная.',
+    uniBack: 'Назад к дереву',
   },
 }

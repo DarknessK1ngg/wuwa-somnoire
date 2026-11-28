@@ -80,17 +80,17 @@ export const ALEPH_LINES = [
   },
   {
     act: 3, key: 'FavorGoods_121103_Content', ver: '3.3',
-    who: { en: 'Item · Denia', ru: 'Предмет · Дания' },
+    who: { en: "Item · Denia's words", ru: 'Предмет · слова Дании' },
     cn: '在祂的尺度上，生命與希望都微不足道、毫無意義。',
     en: '"Life and hope are insignificant noises for it. Meaningless."',
     ru: '«В Его масштабе жизнь и надежда ничтожны и бессмысленны».',
   },
   {
-    act: 3, key: 'FavorGoods_121103_Content', ver: '3.3',
-    who: { en: 'Item · Denia', ru: 'Предмет · Дания' },
-    cn: '那是來自一整片宇宙殘骸的，早在萬億年前就死去的光。',
-    en: '"Those are lights from a cosmic graveyard. Starlight that faded trillions of years ago."',
-    ru: '«Это свет от останков целой вселенной, умерший триллионы лет назад».',
+    act: 3, key: 'FavorGoods_121103_Content', ver: '3.3', ownEn: true,
+    who: { en: "Item · Denia's words", ru: 'Предмет · слова Дании' },
+    cn: '為何虛質空間的黑暗會充滿色彩——因為那是來自一整片宇宙殘骸的，早在萬億年前就死去的光。',
+    en: '"…why the darkness of Voidspace is full of colour: it is light from the remains of an entire universe, light that died trillions of years ago."',
+    ru: '«…почему тьма пространства пустоты полна красок: это свет от останков целой вселенной, умерший ещё триллионы лет назад».',
   },
   {
     act: 3, key: 'Main_LahaiRoi_ZRJDYKX_90_9', ver: '3.3',
@@ -107,8 +107,8 @@ export const ALEPH_TXT = {
     acts: [
       { n: 'I', name: 'The shell', cn: '鳴式', line: 'What Solaris sees is a sliver of the body.' },
       { n: 'II', name: 'The eye', cn: '眼睛', line: 'An eye beyond time and space.' },
-      { n: 'III', name: 'The void', cn: '虛無', line: 'The true form: a black hole.' },
-      { n: 'IV', name: 'Inside the multiverse', cn: '宇宙', line: 'Every universe, and the void among them.' },
+      { n: 'III', name: 'The void', cn: '虛無', line: 'Its true form only resembles a black hole. Itself, it is nothingness.' },
+      { n: 'IV', name: 'Inside the multiverse', cn: '宇宙', line: 'One universe out of countless. Step out of it, and the void is among them all.' },
     ],
     tierEyebrow: 'Claim', tier: '1-A',
     lead: 'Everything begins in the void, and to the void everything is nothing. Aleph-1 is that void.',
@@ -118,6 +118,7 @@ export const ALEPH_TXT = {
       { t: 'Above by existence, not by rank', x: 'To Aleph-1 the whole structure, every dream layer (High 1-B) and the waking world over them (Low 1-A), is equally meaningless (121103). Beings "of a lower dimension" can only give it a name (121004). That is not one more step on the hierarchy: it is nothingness standing over everything that exists. Hence 1-A.' },
     ],
     note: 'The conclusion is our reading. Every quote above carries its key and version.',
+    ownEn: 'our translation from the Chinese; the official English says "a cosmic graveyard"',
     back: 'Up to the tree', up: 'Up to the map',
   },
   ru: {
@@ -125,8 +126,8 @@ export const ALEPH_TXT = {
     acts: [
       { n: 'I', name: 'Оболочка', cn: '鳴式', line: 'То, что видит Солярис, — ничтожная часть тела.' },
       { n: 'II', name: 'Глаз', cn: '眼睛', line: 'Глаз вне времени и пространства.' },
-      { n: 'III', name: 'Небытие', cn: '虛無', line: 'Истинный облик — чёрная дыра.' },
-      { n: 'IV', name: 'Внутри мультивселенной', cn: '宇宙', line: 'Все вселенные — и небытие среди них.' },
+      { n: 'III', name: 'Небытие', cn: '虛無', line: 'Истинный облик лишь похож на чёрную дыру. Сам он — небытие.' },
+      { n: 'IV', name: 'Внутри мультивселенной', cn: '宇宙', line: 'Одна вселенная из бесконечного множества. Выйди из неё — и среди них всех небытие.' },
     ],
     tierEyebrow: 'Заявка', tier: '1-A',
     lead: 'Всё рождается из небытия, и для небытия всё — ничто. Алеф-1 и есть это небытие.',
@@ -136,6 +137,7 @@ export const ALEPH_TXT = {
       { t: 'Выше не по ступени, а по бытию', x: 'Для Алефа-1 вся структура — каждый слой снов (1-B) и реальность над ними (Низкий 1-A) — одинаково ничтожна: «в Его масштабе жизнь и надежда бессмысленны» (121103). Существа «более низкой размерности» могут лишь дать ему имя (121004). Это не ещё одна ступень над иерархией, а превосходство небытия над всем, что существует, — экзистенциальное. Отсюда 1-A.' },
     ],
     note: 'Вывод — наше прочтение. Каждая цитата выше дана с ключом и версией.',
+    ownEn: 'перевод наш, с китайского',
     back: 'Наверх, к дереву', up: 'Наверх, к карте',
   },
 }
